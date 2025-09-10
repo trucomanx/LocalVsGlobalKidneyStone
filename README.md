@@ -1,2 +1,7 @@
-# LocalVsGlobalKidneyStone
-LOCAL DETAIL VS. GLOBAL CONTEXT: COMPARATIVE EVALUATION OF PATCH-BASED AND WHOLE-IMAGE MODELS IN RENAL STONE CLASSIFICATION
+# Local Vs Global KidneyStone
+
+Title of article:
+
+```
+local detail vs. global context: comparative evaluation of patch-based and whole-image models in renal stone classification
+```
