@@ -91,7 +91,8 @@ This will:
 3. Generate **5-fold train/val CSV files** inside the same folder:
    - `train0.csv`, `val0.csv`
    - `train1.csv`, `val1.csv`
-   - ...
+   - `train2.csv`, `val2.csv`
+   - `train3.csv`, `val3.csv`
    - `train4.csv`, `val4.csv`
 
 ---
