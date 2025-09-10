@@ -63,7 +63,8 @@ python main.py -ps <PATCH_SIZE>
 
 ```
 
-### Example:
+---
+## Dataset generation
 
 This example generates only one dataset.
 
