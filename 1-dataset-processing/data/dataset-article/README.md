@@ -1,1 +1,1 @@
-This directory has the datasets 
+This directory contains the datasets.
