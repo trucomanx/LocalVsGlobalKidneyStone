@@ -72,7 +72,7 @@ This example generates only one dataset.
 python main.py -ps 224
 ```
 
-This example generates the entire set of datasets.
+This example generates the entire set of datasets in Ubuntu's `bash`.
 
 ```bash
 for ps in $(seq 64 16 224); do
