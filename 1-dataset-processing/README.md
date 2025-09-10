@@ -127,6 +127,7 @@ Each CSV file has the format:
 filepath,label
 with-stone/imagestone0-patch0.png,1
 without-stone/imagenormal0-patch0.png,0
+...,...
 ```
 ---
 
