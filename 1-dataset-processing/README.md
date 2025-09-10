@@ -19,7 +19,7 @@ The code splits input medical images into **patches** (sub-images) and generates
 ## 📂 Project Structure
 
 ```
-project/
+./
 │
 ├── main.py                     # Main entry point (argparse-based)
 ├── utils/
