@@ -64,7 +64,7 @@ python main.py -ps <PATCH_SIZE>
 ```
 
 ---
-## Dataset generation
+## ▶️ Dataset generation
 
 This example generates only one dataset.
 
@@ -80,6 +80,7 @@ for ps in $(seq 64 16 224); do
 done
 ```
 
+### Description
 This will:
 1. Split all images in `data/dataset-source/` into **patches**.
 2. Save them into:
