@@ -61,7 +61,7 @@ def save_patches_list(img_list: list, img_label_list: list, patch_size: int, ima
   # define minimum threshold value for max pixels in label images (0 - 255)
   min_threshold = 10 
   
-  print("Saving image with id:{image_index} from patch {patch_size}.")
+  print(f"Saving image with id:{image_index} from patch {patch_size}.")
   
   # [numpy.array,numpy.array,numpy.array, ....]  [0,1,1,0,0,0,0,1]
   # save in dir
