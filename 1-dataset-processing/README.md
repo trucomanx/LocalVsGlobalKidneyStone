@@ -50,7 +50,12 @@ Clone the repository and install dependencies with:
 pip install -r requirements.txt
 ```
 
-
+```bash
+kaggle datasets download -d murillobouzon/kssd2025-kidney-stone-segmentation-dataset -p tmpdat/ --unzip
+cp -rf tmpdat/data/image data/dataset-source/stone/
+cp -rf tmpdat/data/label data/dataset-source/stone/
+rm -rf tmpdat/
+```
 ---
 
 ## ▶️ Usage
