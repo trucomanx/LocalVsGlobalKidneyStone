@@ -61,7 +61,7 @@ def save_patches_list(img_list: list, img_label_list: list, patch_size: int, ima
   # define minimum threshold value for max pixels in label images (0 - 255)
   min_threshold = 10 
   
-  print(f"Saving image with id:{image_index} from patch {patch_size}.")
+  #print(f"Saving image with id:{image_index} from patch {patch_size}.")
   
   # [numpy.array,numpy.array,numpy.array, ....]  [0,1,1,0,0,0,0,1]
   # save in dir
@@ -89,6 +89,9 @@ def save_patches_list(img_list: list, img_label_list: list, patch_size: int, ima
 
 def generate_images_patches(class_name_list: list[str], img_pacth_size: int, ds_path: str) -> None:
     
+    print("")
+    print("Working patch_size:", img_pacth_size)
+    
     for class_name in class_name_list:
         
         image_type = '.tif' if class_name == 'stone' else '.jpg'
@@ -98,7 +101,10 @@ def generate_images_patches(class_name_list: list[str], img_pacth_size: int, ds_
         image_dir = os.path.join(ds_path, class_name, "image")
         label_dir = os.path.join(ds_path, class_name, "label")
         
-        for image_index, image_path in enumerate(glob.glob(f"{image_dir}/*{image_type}")):
+        print("Generating class:", class_name)
+        
+        #for image_index, image_path in enumerate(glob.glob(f"{image_dir}/*{image_type}")):
+        for image_index, image_path in enumerate(tqdm(glob.glob(f"{image_dir}/*{image_type}"), desc="Processando imagens")):
         
             # get filename only (without extension)
             filename = os.path.splitext(os.path.basename(image_path))[0]
