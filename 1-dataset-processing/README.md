@@ -78,7 +78,7 @@ python main.py -ps 224
 This example generates the entire set of datasets in Ubuntu's `bash`.
 
 ```bash
-for ps in $(seq 64 16 224); do
+for ps in $(seq 64 8 224); do
     python3 main.py -ps $ps
 done
 ```
