@@ -17,7 +17,7 @@ ds_path = "data/dataset-source/"
 out_path = 'data/dataset-article/'
 
 PATCH_SIZE = 224
-CLASSES = ["stone", "normal"]
+CLASSES = ["stone"]
 
 if __name__ == "__main__":
     
