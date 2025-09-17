@@ -1,3 +1,4 @@
 /1-dataset-processing/data/dataset-article/dataset-*
 /1-dataset-processing/utils/__pycache__/
 /1-dataset-processing/tmpdat
+/1-dataset-processing/data/dataset-source/stone/
