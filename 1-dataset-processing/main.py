@@ -1,5 +1,6 @@
 import os
 import argparse
+import json
 
 from utils.image_processing import (
     np_zero_image,
@@ -35,6 +36,11 @@ if __name__ == "__main__":
     
     if os.path.exists(out_path):
         X, y = datasets_gen(out_path=out_path)   
+        
+        report = {"with-stone": len(y)-y.count(0) ,"without-stone": y.count(0)}
+        with open(os.path.join(out_path, "report.json"), "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=4, ensure_ascii=False)
+    
         datasets_gen_kfold(X, y, num_folds=5, out_path=out_path)
 
 

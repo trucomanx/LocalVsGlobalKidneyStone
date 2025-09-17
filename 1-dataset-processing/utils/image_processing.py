@@ -23,7 +23,7 @@ def np_zero_image(ds_path: str) -> None:
       plt.imshow(img_normal)
 
 
-def image_to_list_patch(image, label_image, patch_size):
+def image_to_list_patch_old(image, label_image, patch_size):
     """
     Divide uma imagem e seu respectivo label em patches sobrepostos.
 
@@ -50,6 +50,70 @@ def image_to_list_patch(image, label_image, patch_size):
             patch_num += 1
             # print(f"Patch {patch_num}: shape={patch_image.shape}, x=({x0},{x1}), y=({y0},{y1})")
 
+            my_image_list.append(patch_image)
+            my_label_list.append(patch_label)
+
+    return my_image_list, my_label_list
+
+import numpy as np
+
+def image_to_list_patch(image, label_image, patch_size, rest=0.25):
+    """
+    Divide uma imagem e seu respectivo label em patches sobrepostos.
+    Permite lidar com sobras menores que o tamanho do patch.
+
+    Args:
+        image (ndarray): imagem original (H, W, C) ou (H, W).
+        label_image (ndarray): máscara/label correspondente (H, W) ou (H, W, C_label).
+        patch_size (int): tamanho do patch quadrado.
+        rest (float): proporção do patch_size que decide se a sobra é ignorada (0 a 1).
+
+    Returns:
+        (list, list): listas com patches da imagem e patches do label.
+    """
+    my_image_list = []
+    my_label_list = []
+
+    step = patch_size // 2
+    h, w = image.shape[:2]
+
+    # Lista de coordenadas iniciais
+    y0_list = list(range(0, h - patch_size + 1, step))
+    x0_list = list(range(0, w - patch_size + 1, step))
+
+    # Checa sobra em Y
+    if h - (y0_list[-1] + patch_size) > rest * patch_size:
+        y0_list.append(h - patch_size)
+    # Checa sobra em X
+    if w - (x0_list[-1] + patch_size) > rest * patch_size:
+        x0_list.append(w - patch_size)
+
+    patch_num = 0
+    for y0 in y0_list:
+        for x0 in x0_list:
+            y1 = y0 + patch_size
+            x1 = x0 + patch_size
+
+            # Patch vazio, preservando dimensões da imagem
+            if image.ndim == 3:
+                patch_image = np.zeros((patch_size, patch_size, image.shape[2]), dtype=image.dtype)
+            else:
+                patch_image = np.zeros((patch_size, patch_size), dtype=image.dtype)
+
+            if label_image.ndim == 3:
+                patch_label = np.zeros((patch_size, patch_size, label_image.shape[2]), dtype=label_image.dtype)
+            else:
+                patch_label = np.zeros((patch_size, patch_size), dtype=label_image.dtype)
+
+            # Limites reais do recorte (não ultrapassa borda)
+            y1_real = min(y1, h)
+            x1_real = min(x1, w)
+
+            # Copia a parte real da imagem/máscara
+            patch_image[0:y1_real - y0, 0:x1_real - x0, ...] = image[y0:y1_real, x0:x1_real, ...]
+            patch_label[0:y1_real - y0, 0:x1_real - x0, ...] = label_image[y0:y1_real, x0:x1_real, ...]
+
+            patch_num += 1
             my_image_list.append(patch_image)
             my_label_list.append(patch_label)
 
