@@ -1,16 +1,15 @@
 #!/bin/bash
 
-# Diretórios
 BASE_DIR="data/dataset-article"
 DEST_DIR="/media/fernando/INFORMATION/0-DATASET/KIDNEY"
 
-# Verifica se a pasta de destino existe
+
 if [ ! -d "$DEST_DIR" ]; then
     echo "❌ Errot: The directory $DEST_DIR does not exist."
     exit 1
 fi
 
-# Loop nos valores de 96 até 224 de 8 em 8
+: <<'COMMENT'
 for size in $(seq 96 8 344); do
     echo "=== Processing size $size ==="
 
@@ -40,4 +39,7 @@ for size in $(seq 96 8 344); do
 done
 
 echo "✅ Process completed!"
+COMMENT
+
+python3 utils/dataset_report.py --input_dir $DEST_DIR  --output_dir $DEST_DIR
 
