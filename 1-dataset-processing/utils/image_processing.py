@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from tqdm import tqdm
+from natsort import natsorted
 
 
 def np_zero_image(ds_path: str) -> None:
@@ -120,7 +121,7 @@ def image_to_list_patch(image, label_image, patch_size, rest=0.25):
     return my_image_list, my_label_list
 
 
-def save_patches_list(img_list: list, img_label_list: list, patch_size: int, image_index: int, class_name: str) -> None:
+def save_patches_list(img_list: list, img_label_list: list, patch_size: int, image_index: str, class_name: str) -> None:
   
   # define minimum threshold value for max pixels in label images (0 - 255)
   min_threshold = 10 
@@ -144,10 +145,10 @@ def save_patches_list(img_list: list, img_label_list: list, patch_size: int, ima
     # print('labels: ', np.max(label_image))
     
     if np.max(label_image) > min_threshold:
-      cv2.imwrite(f"{out_path}/with-stone/image{class_name}{image_index}-patch{i}.png", image)
+      cv2.imwrite(f"{out_path}/with-stone/image{class_name}-{image_index}-patch{i}.png", image)
       # cv2.imwrite(f"{out_path}/with-stone/label{class_name}{image_index}-patch{i}.png", label_image)
     else:
-      cv2.imwrite(f"{out_path}/without-stone/image{class_name}{image_index}-patch{i}.png", image)
+      cv2.imwrite(f"{out_path}/without-stone/image{class_name}-{image_index}-patch{i}.png", image)
       # cv2.imwrite(f"{out_path}/without-stone/label{class_name}{image_index}-patch{i}.png", label_image)
       
 
@@ -167,8 +168,11 @@ def generate_images_patches(class_name_list: list[str], img_pacth_size: int, ds_
         
         print("Generating class:", class_name)
         
-        #for image_index, image_path in enumerate(glob.glob(f"{image_dir}/*{image_type}")):
-        for image_index, image_path in enumerate(tqdm(glob.glob(f"{image_dir}/*{image_type}"), desc="Processando imagens")):
+        # Lista e ordena naturalmente
+        image_paths = natsorted(glob.glob(f"{image_dir}/*{image_type}"))
+
+        # Itera com tqdm
+        for image_index, image_path in enumerate(tqdm(image_paths, desc="Processando imagens")):
         
             # get filename only (without extension)
             filename = os.path.splitext(os.path.basename(image_path))[0]
@@ -190,7 +194,7 @@ def generate_images_patches(class_name_list: list[str], img_pacth_size: int, ds_
                 img_list, 
                 img_label_list=img_label_list, 
                 patch_size=img_pacth_size, 
-                image_index=image_index, 
+                image_index=filename, #image_index, 
                 class_name=class_name
             )
         

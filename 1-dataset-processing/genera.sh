@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Diretórios
+BASE_DIR="data/dataset-article"
+DEST_DIR="/media/fernando/INFORMATION/0-DATASET/KIDNEY"
+
+# Verifica se a pasta de destino existe
+if [ ! -d "$DEST_DIR" ]; then
+    echo "❌ Errot: The directory $DEST_DIR does not exist."
+    exit 1
+fi
+
+# Loop nos valores de 96 até 224 de 8 em 8
+for size in $(seq 96 8 344); do
+    echo "=== Processing size $size ==="
+
+    # 1. Executa o comando para gerar o dataset
+    python main.py -ps "$size"
+
+    DATASET_DIR="$BASE_DIR/dataset-$size"
+    ZIP_FILE="dataset-$size.zip"
+
+    # 2. Compacta a pasta
+    if [ -d "$DATASET_DIR" ]; then
+        echo "Compacting $DATASET_DIR in $ZIP_FILE..."
+        zip -rq "$ZIP_FILE" "$DATASET_DIR"
+
+        # 3. Remove a pasta
+        echo "Removing directory $DATASET_DIR..."
+        rm -rf "$DATASET_DIR"
+
+        # 4. Move o zip para o destino
+        echo "Moving $ZIP_FILE to $DEST_DIR..."
+        mv "$ZIP_FILE" "$DEST_DIR/"
+    else
+        echo "❌ Pasta $DATASET_DIR não encontrada, pulando..."
+    fi
+
+    echo
+done
+
+echo "✅ Process completed!"
+
