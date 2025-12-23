@@ -48,7 +48,11 @@ Clone the repository and install dependencies with:
 
 ```bash
 pip install -r requirements.txt
+```
 
+Download the dataset from Kaggle, first generate the file `~/.kaggle/kaggle.json`, then
+
+```
 kaggle datasets download -d murillobouzon/kssd2025-kidney-stone-segmentation-dataset -p tmpdat/ --unzip
 mkdir -p data/dataset-source/stone/
 cp -rf tmpdat/data/image data/dataset-source/stone/
