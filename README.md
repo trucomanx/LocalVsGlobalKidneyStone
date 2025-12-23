@@ -9,3 +9,4 @@ local detail vs. global context: comparative evaluation of patch-based and whole
 # Structure
 
 * The `1-dataset-processing` directory contains the code to generate classification datasets with various patch sizes.
+* The `2-training-kfold` directory contains the training code.
