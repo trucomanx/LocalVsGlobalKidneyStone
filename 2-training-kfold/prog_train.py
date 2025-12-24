@@ -120,7 +120,7 @@ def get_callbacks(output_dir, patience,label):
 # ============================
 # preprocess
 # ============================
-    
+
 def get_preprocess_fn(model_type):
     if model_type == "EfficientNetV2S":
         return efficientnet_v2.preprocess_input
