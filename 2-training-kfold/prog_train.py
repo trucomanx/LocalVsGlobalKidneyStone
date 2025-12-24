@@ -78,7 +78,8 @@ def save_history_and_plots( history,
     # PLOT: Validation Loss
     # -------------------------
     plt.figure()
-    plt.plot(hist_df["epoch"], hist_df["val_loss"], label="val_loss")
+    plt.plot(hist_df["epoch"], hist_df["loss"], label="train")
+    plt.plot(hist_df["epoch"], hist_df["val_loss"], label="val")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.title("Validation Loss vs Epochs")
@@ -178,6 +179,71 @@ def load_dataset_from_csv(  csv_path,
     ds = ds.map(_load_image, num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
     return ds
+
+# ============================
+# plot dataset
+# ============================
+def save_dataset_grid_raw(
+    dataset,
+    output_path,
+    grid_rows=4,
+    grid_cols=4,
+    class_names=None,
+    max_batches=1
+):
+    """
+    Visualiza imagens exatamente como entram no modelo
+    (após augmentation + preprocess_input)
+
+    dataset      : tf.data.Dataset
+    output_path  : caminho para salvar a imagem
+    grid_rows    : número de linhas
+    grid_cols    : número de colunas
+    class_names  : lista opcional de nomes das classes
+    max_batches  : quantos batches percorrer
+    """
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    num_images = grid_rows * grid_cols
+    images = []
+    labels = []
+
+    for batch_idx, (x_batch, y_batch) in enumerate(dataset):
+        for i in range(x_batch.shape[0]):
+            images.append(x_batch[i].numpy())
+            labels.append(y_batch[i].numpy())
+
+            if len(images) >= num_images:
+                break
+
+        if batch_idx + 1 >= max_batches or len(images) >= num_images:
+            break
+
+    images = np.array(images)
+    labels = np.array(labels)
+    labels_idx = np.argmax(labels, axis=1)
+
+    plt.figure(figsize=(grid_cols * 3, grid_rows * 3))
+
+    for i in range(num_images):
+        plt.subplot(grid_rows, grid_cols, i + 1)
+
+        img = images[i]
+
+        # ⚠️ SEM normalização — mostra exatamente o tensor
+        plt.imshow(img)
+        plt.axis("off")
+
+        label = labels_idx[i]
+        title = class_names[label] if class_names else f"Label: {label}"
+        plt.title(title, fontsize=10)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    print(f"[OK] Grade RAW salva em: {output_path}")
 
 # ============================
 # Data augmentation
@@ -350,6 +416,15 @@ def train_subdataset(   patch_dataset_path,
             output_dir=fold_path,
             prefix=f"stage1"
         )
+        
+        save_dataset_grid_raw(
+            train_ds,
+            os.path.join(fold_path,f"dataset-train-stage1.png"),
+            grid_rows=4,
+            grid_cols=4,
+            class_names=None,
+            max_batches=1
+        )
 
         # ---------
         # STAGE 2: backbone destravado
@@ -385,6 +460,15 @@ def train_subdataset(   patch_dataset_path,
             history=results,
             output_dir=fold_path,
             prefix=f"stage2"
+        )
+        
+        save_dataset_grid_raw(
+            train_ds,
+            os.path.join(fold_path,f"dataset-train-stage2.png"),
+            grid_rows=4,
+            grid_cols=4,
+            class_names=None,
+            max_batches=1
         )
 
         # ---------
