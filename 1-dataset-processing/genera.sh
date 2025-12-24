@@ -42,5 +42,5 @@ done
 echo "✅ Process completed!"
 #COMMENT
 
-python3 utils/dataset_report.py --input_dir $DEST_DIR  --output_dir $DEST_DIR
+python3 dp_utils/dataset_report.py --input_dir $DEST_DIR  --output_dir $DEST_DIR
 

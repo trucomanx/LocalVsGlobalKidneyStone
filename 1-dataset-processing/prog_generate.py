@@ -33,6 +33,8 @@ def generate_dataset(ds_path,base_out_path,patch_size,classes=["stone"]):
     
         datasets_gen_kfold(X, y, num_folds=5, out_path=out_path)
 
+    return out_path
+
 if __name__ == "__main__":
     
     ds_path = "data/dataset-source/"
