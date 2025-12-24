@@ -163,10 +163,7 @@ def load_dataset_from_csv(  csv_path,
                             shuffle=True,
                             num_classes=2,
                             augment=False,
-                            augmentation=None,
-                            debug_save_path=None, #
-                            debug_batches=1, #
-                            class_names=None #
+                            augmentation=None
                         ):
                         
     df = pd.read_csv(csv_path)
@@ -175,28 +172,20 @@ def load_dataset_from_csv(  csv_path,
     labels = df["label"].values
 
     ds = tf.data.Dataset.from_tensor_slices((filepaths, labels))
+
     preprocess_fn = get_preprocess_fn(model_type)
 
     if shuffle:
         ds = ds.shuffle(buffer_size=len(df))
 
-    debug_images = []
-    debug_labels = []
-
     def _load_image(path, label):
         img = tf.io.read_file(path)
         img = tf.image.decode_png(img, channels=3)
         img = tf.image.resize(img, img_size)
-
         img = tf.cast(img, tf.float32)
 
         if augment and augmentation is not None:
             img = augmentation(img, training=True)
-
-        # 🔍 captura ANTES do preprocess
-        if debug_save_path is not None and len(debug_images) < debug_batches * batch_size:
-            debug_images.append(img)
-            debug_labels.append(label)
 
         img = preprocess_fn(img)
 
@@ -207,58 +196,12 @@ def load_dataset_from_csv(  csv_path,
     ds = ds.map(_load_image, num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-    # 🔍 salva grid UMA vez
-    if debug_save_path is not None and debug_images:
-        imgs = tf.stack(debug_images).numpy()
-        labs = np.array(debug_labels)
-
-        save_image_grid(
-            imgs,
-            labs,
-            debug_save_path,
-            class_names=class_names
-        )
-
     return ds
 
 # ============================
 # plot dataset
 # ============================
-def save_image_grid(
-        images,
-        labels,
-        output_path,
-        grid_rows=4,
-        grid_cols=4,
-        class_names=None
-    ):
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    num_images = min(len(images), grid_rows * grid_cols)
-
-    plt.figure(figsize=(grid_cols * 3, grid_rows * 3))
-
-    for i in range(num_images):
-        plt.subplot(grid_rows, grid_cols, i + 1)
-
-        img = images[i]
-
-        # Normalização APENAS para visualização
-        img_vis = img - img.min()
-        img_vis = img_vis / (img_vis.max() + 1e-8)
-
-        plt.imshow(img_vis)
-        plt.axis("off")
-
-        label = labels[i]
-        title = class_names[label] if class_names else f"Label: {label}"
-        plt.title(title, fontsize=10)
-
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    plt.close()
-
-    print(f"[OK] Dataset grid salvo em: {output_path}")
 
 
 # ============================
@@ -414,9 +357,7 @@ def train_subdataset(   patch_dataset_path,
             batch_size,
             shuffle=True,
             augment=True,
-            augmentation=augmentation,
-            debug_save_path=os.path.join(fold_path, "train-debug-grid.png"),
-            class_names=["without-stone", "with-stone"]
+            augmentation=augmentation
         )
 
         val_ds = load_dataset_from_csv(
@@ -572,8 +513,8 @@ def train_subdataset(   patch_dataset_path,
 # EXEMPLO DE USO
 # ============================
 if __name__ == "__main__":
-    patch_dataset_path = "/caminho/para/dataset-64"
-    output_result_path = "/caminho/para/outputs/dataset-64"
+    patch_dataset_path = "../1-dataset-processing/data/dataset-article/dataset-64/"
+    output_result_path = "outputs/dataset-64"
     model_type = "EfficientNetV2S"
     
     train_subdataset(patch_dataset_path, output_result_path, model_type)
