@@ -16,10 +16,10 @@ from utils.csv_processing import (
 
 def generate_dataset(ds_path,base_out_path,patch_size,classes=["stone"]):
 
-    out_path = os.path.join(base_out_path,f'dataset-{pacth_size}')
+    out_path = os.path.join(base_out_path,f'dataset-{patch_size}')
     
     generate_images_patches(class_name_list=classes, 
-                            img_pacth_size=patch_size, 
+                            img_patch_size=patch_size, 
                             ds_path=ds_path,
                             out_path=out_path )
     

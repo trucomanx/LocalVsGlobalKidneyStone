@@ -9,8 +9,9 @@ if [ ! -d "$DEST_DIR" ]; then
     exit 1
 fi
 
-: <<'COMMENT'
-for size in $(seq 96 8 344); do
+#: <<'COMMENT'
+#for size in $(seq 96 8 344); do
+for size in $(seq 96 8 104); do
     echo "=== Processing size $size ==="
 
     # 1. Executa o comando para gerar o dataset
@@ -39,7 +40,7 @@ for size in $(seq 96 8 344); do
 done
 
 echo "✅ Process completed!"
-COMMENT
+#COMMENT
 
 python3 utils/dataset_report.py --input_dir $DEST_DIR  --output_dir $DEST_DIR
 

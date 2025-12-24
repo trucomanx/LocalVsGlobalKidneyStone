@@ -153,12 +153,12 @@ def save_patches_list(  img_list: list,
  
 
 def generate_images_patches(class_name_list: list[str], 
-                            img_pacth_size: int, 
+                            img_patch_size: int, 
                             ds_path: str,
                             out_path: str) -> None:
     
     print("")
-    print("Working patch_size:", img_pacth_size)
+    print("Working patch_size:", img_patch_size)
     
     for class_name in class_name_list:
         
@@ -192,12 +192,12 @@ def generate_images_patches(class_name_list: list[str],
             img = cv2.imread(image_path)
             img_label = cv2.imread(label_path)
         
-            img_list, img_label_list =  image_to_list_patch(img, img_label, patch_size=img_pacth_size)
+            img_list, img_label_list =  image_to_list_patch(img, img_label, patch_size=img_patch_size)
             
             save_patches_list(
                 img_list, 
                 img_label_list=img_label_list, 
-                patch_size=img_pacth_size, 
+                patch_size=img_patch_size, 
                 image_index=filename, #image_index, 
                 class_name=class_name,
                 out_path = out_path
