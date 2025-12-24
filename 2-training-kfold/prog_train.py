@@ -414,7 +414,9 @@ def train_subdataset(   patch_dataset_path,
             batch_size,
             shuffle=True,
             augment=True,
-            augmentation=augmentation
+            augmentation=augmentation,
+            debug_save_path=os.path.join(fold_path, "train-debug-grid.png"),
+            class_names=["without-stone", "with-stone"]
         )
 
         val_ds = load_dataset_from_csv(
