@@ -9,7 +9,8 @@ from natsort import natsorted
 
 
 def np_zero_image(ds_path: str) -> None:
-    for i, image in enumerate(glob.glob(f"{ds_path}/normal/image/*jpg")):
+    
+    for i, image in enumerate(glob.glob(os.path.join(ds_path,"normal","image","*jpg"))):
       # read image in numpy array format
       img_normal = cv2.imread(image)
       
@@ -18,7 +19,7 @@ def np_zero_image(ds_path: str) -> None:
       img_zeros = np.zeros(img_normal.shape)
       
       # define the path to write the image
-      out_path = os.path.join(f"{ds_path}/normal/label/", f"Normal- ({i+1}).jpg")
+      out_path = os.path.join(ds_path,"normal","label", f"Normal- ({i+1}).jpg")
       cv2.imwrite(out_path,  img_zeros)
       
       plt.imshow(img_normal)
@@ -121,7 +122,12 @@ def image_to_list_patch(image, label_image, patch_size, rest=0.25):
     return my_image_list, my_label_list
 
 
-def save_patches_list(img_list: list, img_label_list: list, patch_size: int, image_index: str, class_name: str) -> None:
+def save_patches_list(  img_list: list, 
+                        img_label_list: list, 
+                        patch_size: int, 
+                        image_index: str, 
+                        class_name: str,
+                        out_path:str) -> None:
   
   # define minimum threshold value for max pixels in label images (0 - 255)
   min_threshold = 10 
@@ -131,28 +137,25 @@ def save_patches_list(img_list: list, img_label_list: list, patch_size: int, ima
   # [numpy.array,numpy.array,numpy.array, ....]  [0,1,1,0,0,0,0,1]
   # save in dir
 
-  out_path = f'data/dataset-article/dataset-{patch_size}/'
-
-  os.makedirs(f"{out_path}/with-stone", exist_ok=True)
-  # os.makedirs(f"{out_path}/with-stone/label", exist_ok=True)
-  # os.makedirs(f"{out_path}/without-stone/image", exist_ok=True)
-  os.makedirs(f"{out_path}/without-stone", exist_ok=True)
+  os.makedirs(os.path.join(out_path,"with-stone"), exist_ok=True)
+  os.makedirs(os.path.join(out_path,"without-stone"), exist_ok=True)
 
   for i, (label_image, image) in enumerate(zip(img_label_list, img_list)):
-
     # print(f"Patch {i}: label={np.max(label_image)}, image={image.shape}")
-
     # print('labels: ', np.max(label_image))
-    
+    filename=f"image{class_name}-{image_index}-patch{i}.png"
     if np.max(label_image) > min_threshold:
-      cv2.imwrite(f"{out_path}/with-stone/image{class_name}-{image_index}-patch{i}.png", image)
-      # cv2.imwrite(f"{out_path}/with-stone/label{class_name}{image_index}-patch{i}.png", label_image)
+      fpath=os.path.join(out_path,"with-stone",filename)
     else:
-      cv2.imwrite(f"{out_path}/without-stone/image{class_name}-{image_index}-patch{i}.png", image)
-      # cv2.imwrite(f"{out_path}/without-stone/label{class_name}{image_index}-patch{i}.png", label_image)
-      
+      fpath=os.path.join(out_path,"without-stone",filename)
+    
+    cv2.imwrite(fpath, image)
+ 
 
-def generate_images_patches(class_name_list: list[str], img_pacth_size: int, ds_path: str) -> None:
+def generate_images_patches(class_name_list: list[str], 
+                            img_pacth_size: int, 
+                            ds_path: str,
+                            out_path: str) -> None:
     
     print("")
     print("Working patch_size:", img_pacth_size)
@@ -169,7 +172,8 @@ def generate_images_patches(class_name_list: list[str], img_pacth_size: int, ds_
         print("Generating class:", class_name)
         
         # Lista e ordena naturalmente
-        image_paths = natsorted(glob.glob(f"{image_dir}/*{image_type}"))
+        fpath=os.path.join(image_dir,f"*{image_type}")
+        image_paths = natsorted(glob.glob(fpath))
 
         # Itera com tqdm
         for image_index, image_path in enumerate(tqdm(image_paths, desc="Processando imagens")):
@@ -195,6 +199,8 @@ def generate_images_patches(class_name_list: list[str], img_pacth_size: int, ds_
                 img_label_list=img_label_list, 
                 patch_size=img_pacth_size, 
                 image_index=filename, #image_index, 
-                class_name=class_name
+                class_name=class_name,
+                out_path = out_path
             )
         
+

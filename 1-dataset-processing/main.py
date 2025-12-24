@@ -14,25 +14,14 @@ from utils.csv_processing import (
     datasets_gen_kfold
 )
 
-ds_path = "data/dataset-source/"
-out_path = 'data/dataset-article/'
+def generate_dataset(ds_path,base_out_path,patch_size,classes=["stone"]):
 
-PATCH_SIZE = 224
-CLASSES = ["stone"]
-
-if __name__ == "__main__":
+    out_path = os.path.join(base_out_path,f'dataset-{pacth_size}')
     
-    parser = argparse.ArgumentParser(description="Image patches processing")
-    parser.add_argument("-ps", "--patch_size", required=True, type=int)
-    args = parser.parse_args()
-    
-    patch_size = args.patch_size
-    
-    generate_images_patches(class_name_list=CLASSES, 
+    generate_images_patches(class_name_list=classes, 
                             img_pacth_size=patch_size, 
-                            ds_path=ds_path )
-    
-    out_path = f"{out_path}dataset-{patch_size}"
+                            ds_path=ds_path,
+                            out_path=out_path )
     
     if os.path.exists(out_path):
         X, y = datasets_gen(out_path=out_path)   
@@ -43,4 +32,17 @@ if __name__ == "__main__":
     
         datasets_gen_kfold(X, y, num_folds=5, out_path=out_path)
 
+if __name__ == "__main__":
+    
+    ds_path = "data/dataset-source/"
+    out_path = 'data/dataset-article/'
+    CLASSES = ["stone"]
+
+    parser = argparse.ArgumentParser(description="Image patches processing")
+    parser.add_argument("-ps", "--patch_size", required=True, type=int)
+    args = parser.parse_args()
+    
+    patch_size = args.patch_size
+    
+    generate_dataset(ds_path,out_path,patch_size,CLASSES)
 

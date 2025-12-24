@@ -53,10 +53,11 @@ pip install -r requirements.txt
 Download the dataset from Kaggle, first generate the file `~/.kaggle/kaggle.json`, then
 
 ```
+OUTDIR="data/dataset-source/stone/"
 kaggle datasets download -d murillobouzon/kssd2025-kidney-stone-segmentation-dataset -p tmpdat/ --unzip
-mkdir -p data/dataset-source/stone/
-cp -rf tmpdat/data/image data/dataset-source/stone/
-cp -rf tmpdat/data/label data/dataset-source/stone/
+mkdir -p $OUTDIR
+cp -rf tmpdat/data/image $OUTDIR
+cp -rf tmpdat/data/label $OUTDIR
 rm -rf tmpdat/
 ```
 ---
