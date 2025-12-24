@@ -17,6 +17,7 @@ from dp_utils.csv_processing import (
 def generate_dataset(ds_path,base_out_path,patch_size,classes=["stone"]):
 
     out_path = os.path.join(base_out_path,f'dataset-{patch_size}')
+    os.makedirs(out_path,exist_ok=True)
     
     generate_images_patches(class_name_list=classes, 
                             img_patch_size=patch_size, 
