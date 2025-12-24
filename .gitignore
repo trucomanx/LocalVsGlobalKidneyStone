@@ -3,3 +3,5 @@
 /1-dataset-processing/tmpdat
 /1-dataset-processing/data/dataset-source/stone/
 /1-dataset-processing/dp_utils/__pycache__/
+/2-training-kfold/modules/__pycache__/
+/2-training-kfold/modules/.ipynb_checkpoints

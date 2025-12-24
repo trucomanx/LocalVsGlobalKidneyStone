@@ -35,6 +35,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ============================
+# weights
+# ============================
+def compute_class_weight_from_dict(data):
+    num_pos = data['with-stone']
+    num_neg = data['without-stone']
+
+    total = num_pos + num_neg
+
+    class_weight = {
+        0: total / (2.0 * num_neg),  # without-stone
+        1: total / (2.0 * num_pos),  # with-stone
+    }
+    return class_weight
+
+
+# ============================
 # Save results
 # ============================
 def save_history_and_plots( history,
@@ -147,7 +163,10 @@ def load_dataset_from_csv(  csv_path,
                             shuffle=True,
                             num_classes=2,
                             augment=False,
-                            augmentation=None
+                            augmentation=None,
+                            debug_save_path=None, #
+                            debug_batches=1, #
+                            class_names=None #
                         ):
                         
     df = pd.read_csv(csv_path)
@@ -161,6 +180,9 @@ def load_dataset_from_csv(  csv_path,
     if shuffle:
         ds = ds.shuffle(buffer_size=len(df))
 
+    debug_images = []
+    debug_labels = []
+
     def _load_image(path, label):
         img = tf.io.read_file(path)
         img = tf.image.decode_png(img, channels=3)
@@ -171,58 +193,48 @@ def load_dataset_from_csv(  csv_path,
         if augment and augmentation is not None:
             img = augmentation(img, training=True)
 
+        # 🔍 captura ANTES do preprocess
+        if debug_save_path is not None and len(debug_images) < debug_batches * batch_size:
+            debug_images.append(img)
+            debug_labels.append(label)
+
         img = preprocess_fn(img)
 
         label = tf.one_hot(label, num_classes)
+
         return img, label
 
     ds = ds.map(_load_image, num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+
+    # 🔍 salva grid UMA vez
+    if debug_save_path is not None and debug_images:
+        imgs = tf.stack(debug_images).numpy()
+        labs = np.array(debug_labels)
+
+        save_image_grid(
+            imgs,
+            labs,
+            debug_save_path,
+            class_names=class_names
+        )
+
     return ds
 
 # ============================
 # plot dataset
 # ============================
-def save_dataset_grid_raw(
-    dataset,
-    output_path,
-    grid_rows=4,
-    grid_cols=4,
-    class_names=None,
-    max_batches=1
-):
-    """
-    Visualiza imagens exatamente como entram no modelo
-    (após augmentation + preprocess_input)
-
-    dataset      : tf.data.Dataset
-    output_path  : caminho para salvar a imagem
-    grid_rows    : número de linhas
-    grid_cols    : número de colunas
-    class_names  : lista opcional de nomes das classes
-    max_batches  : quantos batches percorrer
-    """
-
+def save_image_grid(
+        images,
+        labels,
+        output_path,
+        grid_rows=4,
+        grid_cols=4,
+        class_names=None
+    ):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    num_images = grid_rows * grid_cols
-    images = []
-    labels = []
-
-    for batch_idx, (x_batch, y_batch) in enumerate(dataset):
-        for i in range(x_batch.shape[0]):
-            images.append(x_batch[i].numpy())
-            labels.append(y_batch[i].numpy())
-
-            if len(images) >= num_images:
-                break
-
-        if batch_idx + 1 >= max_batches or len(images) >= num_images:
-            break
-
-    images = np.array(images)
-    labels = np.array(labels)
-    labels_idx = np.argmax(labels, axis=1)
+    num_images = min(len(images), grid_rows * grid_cols)
 
     plt.figure(figsize=(grid_cols * 3, grid_rows * 3))
 
@@ -231,11 +243,14 @@ def save_dataset_grid_raw(
 
         img = images[i]
 
-        # ⚠️ SEM normalização — mostra exatamente o tensor
-        plt.imshow(img)
+        # Normalização APENAS para visualização
+        img_vis = img - img.min()
+        img_vis = img_vis / (img_vis.max() + 1e-8)
+
+        plt.imshow(img_vis)
         plt.axis("off")
 
-        label = labels_idx[i]
+        label = labels[i]
         title = class_names[label] if class_names else f"Label: {label}"
         plt.title(title, fontsize=10)
 
@@ -243,7 +258,8 @@ def save_dataset_grid_raw(
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"[OK] Grade RAW salva em: {output_path}")
+    print(f"[OK] Dataset grid salvo em: {output_path}")
+
 
 # ============================
 # Data augmentation
@@ -267,7 +283,7 @@ def build_model(model_type="EfficientNetV2S", num_classes=2):
 
     if model_type == "EfficientNetV2S":
         Backbone = EfficientNetV2S
-        image_sz = (224, 224)
+        image_sz = (224, 224) # (384, 384)
 
     elif model_type == "MobileNetV3Large":
         Backbone = MobileNetV3Large
@@ -326,12 +342,31 @@ def compute_metrics(y_true, y_pred):
     return acc, prec, tnr, rec, f1, cm
 
 # ============================
+# EVALUATE DATASET
+# ============================
+
+def evaluate_dataset(model, val_ds):
+    y_true_all = []
+    y_pred_all = []
+
+    for x_batch, y_batch in val_ds:
+        preds = model.predict(x_batch, verbose=0)
+        y_true_all.append(y_batch.numpy())
+        y_pred_all.append(preds)
+
+    y_true_all = np.concatenate(y_true_all)
+    y_pred_all = np.concatenate(y_pred_all)
+    
+    return y_true_all, y_pred_all
+
+# ============================
 # TREINAMENTO POR SUB-DATASET
 # ============================
 def train_subdataset(   patch_dataset_path, 
                         output_result_path, 
                         model_type, 
                         batch_size=32,
+                        class_weight={0:1.0,1:1.0},
                         epochs_stage_1 = 200, 
                         epochs_stage_2 = 200, 
                         learning_rate_stage_1 = 1e-3, 
@@ -346,7 +381,7 @@ def train_subdataset(   patch_dataset_path,
                         
     os.makedirs(output_result_path, exist_ok=True)
 
-    metrics = {
+    metrics_s2 = {
         "accuracy": [],
         "precision": [],
         "true-negative-rate": [],
@@ -408,6 +443,7 @@ def train_subdataset(   patch_dataset_path,
             validation_data=val_ds,
             epochs=epochs_stage_1,
             callbacks=callbacks_s1,
+            class_weight=class_weight,
             verbose=1
         )
         
@@ -417,15 +453,29 @@ def train_subdataset(   patch_dataset_path,
             prefix=f"stage1"
         )
         
-        save_dataset_grid_raw(
-            train_ds,
-            os.path.join(fold_path,f"dataset-train-stage1.png"),
-            grid_rows=4,
-            grid_cols=4,
-            class_names=None,
-            max_batches=1
-        )
+        # ---------
+        # LOAD BEST MODEL
+        # ---------
 
+        best_model_path = get_keras_model_name(fold_path, "stage1")
+        model = tf.keras.models.load_model(best_model_path)
+        
+        # ---------
+        # AVALIAÇÃO
+        # ---------
+        y_true_all, y_pred_all = evaluate_dataset(model, val_ds)
+        acc, prec, tnr, rec, f1, cm = compute_metrics(y_true_all, y_pred_all)
+        
+        metrics_s1["accuracy"].append(acc)
+        metrics_s1["precision"].append(prec)
+        metrics_s1["true-negative-rate"].append(tnr)
+        metrics_s1["recall"].append(rec)
+        metrics_s1["f1-score"].append(f1)
+
+        cm_path = os.path.join(fold_path, f"val-confusion-matrix-stage1.json")
+        with open(cm_path, "w") as f:
+            json.dump(cm.tolist(), f, indent=4)
+        
         # ---------
         # STAGE 2: backbone destravado
         # ---------
@@ -453,6 +503,7 @@ def train_subdataset(   patch_dataset_path,
             validation_data=val_ds,
             epochs=epochs_stage_2,
             callbacks=callbacks_s2,
+            class_weight=class_weight,
             verbose=1
         )
         
@@ -462,44 +513,24 @@ def train_subdataset(   patch_dataset_path,
             prefix=f"stage2"
         )
         
-        save_dataset_grid_raw(
-            train_ds,
-            os.path.join(fold_path,f"dataset-train-stage2.png"),
-            grid_rows=4,
-            grid_cols=4,
-            class_names=None,
-            max_batches=1
-        )
-
         # ---------
         # LOAD BEST MODEL
         # ---------
 
         best_model_path = get_keras_model_name(fold_path, "stage2")
-        
         model = tf.keras.models.load_model(best_model_path)
         
         # ---------
         # AVALIAÇÃO
         # ---------
-        y_true_all = []
-        y_pred_all = []
-
-        for x_batch, y_batch in val_ds:
-            preds = model.predict(x_batch, verbose=0)
-            y_true_all.append(y_batch.numpy())
-            y_pred_all.append(preds)
-
-        y_true_all = np.concatenate(y_true_all)
-        y_pred_all = np.concatenate(y_pred_all)
-
+        y_true_all, y_pred_all = evaluate_dataset(model, val_ds)
         acc, prec, tnr, rec, f1, cm = compute_metrics(y_true_all, y_pred_all)
 
-        metrics["accuracy"].append(acc)
-        metrics["precision"].append(prec)
-        metrics["true-negative-rate"].append(tnr)
-        metrics["recall"].append(rec)
-        metrics["f1-score"].append(f1)
+        metrics_s2["accuracy"].append(acc)
+        metrics_s2["precision"].append(prec)
+        metrics_s2["true-negative-rate"].append(tnr)
+        metrics_s2["recall"].append(rec)
+        metrics_s2["f1-score"].append(f1)
 
         cm_path = os.path.join(fold_path, f"val-confusion-matrix-stage2.json")
         with open(cm_path, "w") as f:
@@ -528,12 +559,12 @@ def train_subdataset(   patch_dataset_path,
     # ---------
     # SALVA MÉTRICAS GERAIS
     # ---------
-    metrics_path = os.path.join(output_result_path, "val-metrics.json")
+    metrics_s2_path = os.path.join(output_result_path, "val-metrics-step2.json")
     with open(metrics_path, "w") as f:
-        json.dump(metrics, f, indent=4)
+        json.dump(metrics_s2, f, indent=4)
 
     print("\nTreinamento finalizado.")
-    print("Métricas salvas em:", metrics_path)
+    print("Métricas salvas em:", metrics_s2_path)
 
 # ============================
 # EXEMPLO DE USO
