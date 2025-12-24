@@ -155,6 +155,21 @@ def get_preprocess_fn(model_type):
 # ============================
 # DATASET
 # ============================
+
+def preprocess_image_from_path(path, img_size, model_type, augment=False, augmentation_func=None):
+    preprocess_fn = get_preprocess_fn(model_type)
+
+    img = tf.io.read_file(path)
+    img = tf.image.decode_png(img, channels=3)
+    img = tf.image.resize(img, img_size)
+    img = tf.cast(img, tf.float32)
+
+    if augment and augmentation_func is not None:
+        img = augmentation_func(img, training=False)
+
+    img = preprocess_fn(img)
+    return img
+ 
 def load_dataset_from_csv(  csv_path,
                             base_path,
                             img_size,
@@ -163,7 +178,7 @@ def load_dataset_from_csv(  csv_path,
                             shuffle=True,
                             num_classes=2,
                             augment=False,
-                            augmentation=None
+                            augmentation_func=None
                         ):
                         
     df = pd.read_csv(csv_path)
@@ -179,18 +194,15 @@ def load_dataset_from_csv(  csv_path,
         ds = ds.shuffle(buffer_size=len(df))
 
     def _load_image(path, label):
-        img = tf.io.read_file(path)
-        img = tf.image.decode_png(img, channels=3)
-        img = tf.image.resize(img, img_size)
-        img = tf.cast(img, tf.float32)
-
-        if augment and augmentation is not None:
-            img = augmentation(img, training=True)
-
-        img = preprocess_fn(img)
+        img = preprocess_image_from_path(
+            path,
+            img_size,
+            model_type,
+            augment=augment,
+            augmentation_func=augmentation_func
+        )
 
         label = tf.one_hot(label, num_classes)
-
         return img, label
 
     ds = ds.map(_load_image, num_parallel_calls=tf.data.AUTOTUNE)
@@ -347,7 +359,7 @@ def train_subdataset(   patch_dataset_path,
         train_csv = os.path.join(patch_dataset_path, f"train{fold}.csv")
         val_csv = os.path.join(patch_dataset_path, f"val{fold}.csv")
         
-        augmentation = get_augmentation(my_seed=my_seed)
+        augmentation_func = get_augmentation(my_seed=my_seed)
 
         train_ds = load_dataset_from_csv(
             train_csv,
@@ -357,7 +369,7 @@ def train_subdataset(   patch_dataset_path,
             batch_size,
             shuffle=True,
             augment=True,
-            augmentation=augmentation
+            augmentation_func=augmentation_func
         )
 
         val_ds = load_dataset_from_csv(
