@@ -4,8 +4,14 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-from tqdm import tqdm
 from natsort import natsorted
+
+try:
+    # Jupyter / Colab
+    from tqdm.notebook import tqdm
+except ImportError:
+    # Terminal / script normal
+    from tqdm import tqdm
 
 
 def np_zero_image(ds_path: str) -> None:
