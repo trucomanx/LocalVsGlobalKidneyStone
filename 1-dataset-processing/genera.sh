@@ -15,7 +15,7 @@ for size in $(seq 96 8 104); do
     echo "=== Processing size $size ==="
 
     # 1. Executa o comando para gerar o dataset
-    python main.py -ps "$size"
+    python prog_generate.py -ps "$size"
 
     DATASET_DIR="$BASE_DIR/dataset-$size"
     ZIP_FILE="dataset-$size.zip"

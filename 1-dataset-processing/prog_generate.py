@@ -2,14 +2,14 @@ import os
 import argparse
 import json
 
-from utils.image_processing import (
+from dp_utils.image_processing import (
     np_zero_image,
     image_to_list_patch,
     save_patches_list,
     generate_images_patches,
 )
 
-from utils.csv_processing import (
+from dp_utils.csv_processing import (
     datasets_gen,
     datasets_gen_kfold
 )

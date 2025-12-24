@@ -21,8 +21,8 @@ The code splits input medical images into **patches** (sub-images) and generates
 ```
 ./
 │
-├── main.py                     # Main entry point (argparse-based)
-├── utils/
+├── prog_generate.py                     # Main entry point (argparse-based)
+├── dp_utils/
 │   ├── image_processing.py      # Image splitting, patch generation, saving
 │   └── csv_processing.py        # Dataset CSV and K-Fold generation
 │
@@ -64,11 +64,11 @@ rm -rf tmpdat/
 
 ## ▶️ Usage
 
-Run the main script with a patch size:
+Run the prog_generate script with a patch size:
 
 ```bash
 # Args: --patch_size or -ps
-python main.py -ps <PATCH_SIZE>
+python prog_generate.py -ps <PATCH_SIZE>
 
 ```
 
@@ -78,14 +78,14 @@ python main.py -ps <PATCH_SIZE>
 This example generates only one dataset.
 
 ```bash
-python main.py -ps 224
+python prog_generate.py -ps 224
 ```
 
 This example generates the entire set of datasets in Ubuntu's `bash`.
 
 ```bash
 for ps in $(seq 64 8 224); do
-    python3 main.py -ps $ps
+    python3 prog_generate.py -ps $ps
 done
 ```
 
