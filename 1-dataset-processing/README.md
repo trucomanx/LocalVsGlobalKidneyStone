@@ -55,9 +55,9 @@ Download the dataset from Kaggle, first generate the file `~/.kaggle/kaggle.json
 ```
 OUTDIR="data/dataset-source/stone/"
 kaggle datasets download -d murillobouzon/kssd2025-kidney-stone-segmentation-dataset -p tmpdat/ --unzip
-mkdir -p $OUTDIR
-cp -rf tmpdat/data/image $OUTDIR
-cp -rf tmpdat/data/label $OUTDIR
+mkdir -p $OUTDIR/stone
+cp -rf tmpdat/data/image $OUTDIR/stone/
+cp -rf tmpdat/data/label $OUTDIR/stone/
 rm -rf tmpdat/
 ```
 ---
