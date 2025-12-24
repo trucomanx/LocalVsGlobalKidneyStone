@@ -180,6 +180,10 @@ def generate_images_patches(class_name_list: list[str],
         # Lista e ordena naturalmente
         fpath=os.path.join(image_dir,f"*{image_type}")
         image_paths = natsorted(glob.glob(fpath))
+        
+        print("\nclass_name:",class_name)
+        print(fpath)
+        print("len:",len(image_paths))
 
         # Itera com tqdm
         for image_index, image_path in enumerate(tqdm(image_paths, desc="Processando imagens")):
