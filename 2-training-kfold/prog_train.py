@@ -111,6 +111,117 @@ def save_history_and_plots( history,
     print(f"     {acc_plot_path}")
     print(f"     {loss_plot_path}")
 
+def save_confusion_matrix(
+    cm,
+    output_dir,
+    filename_prefix,
+    class_names,
+    stage_name=None,
+    normalize=False
+):
+    """
+    Salva a matriz de confusão em JSON (com metadados)
+    e gera uma imagem PNG usando matplotlib.
+
+    Parameters
+    ----------
+    cm : np.ndarray
+        Matriz de confusão (shape [N, N])
+        Linhas = reais, colunas = preditos
+    output_dir : str
+        Diretório de saída
+    filename_prefix : str
+        Ex: "val-confusion-matrix"
+    class_names : list[str]
+        Ex: ["without-stone", "with-stone"]
+    stage_name : str | None
+        Ex: "stage1", "stage2"
+    normalize : bool
+        Se True, normaliza por linha (valores em %)
+    """
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    cm = np.asarray(cm)
+
+    # -------------------------
+    # Normalização (opcional)
+    # -------------------------
+    if normalize:
+        cm_plot = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+        cm_plot = np.nan_to_num(cm_plot)
+    else:
+        cm_plot = cm.copy()
+
+    # -------------------------
+    # JSON estruturado
+    # -------------------------
+    json_data = {
+        "matrix": cm.tolist(),
+        "rows": "ground_truth",
+        "columns": "prediction",
+        "class_names": class_names,
+        "normalized": normalize
+    }
+
+    stage_suffix = f"-{stage_name}" if stage_name else ""
+
+    json_path = os.path.join(
+        output_dir,
+        f"{filename_prefix}{stage_suffix}.json"
+    )
+
+    with open(json_path, "w") as f:
+        json.dump(json_data, f, indent=4)
+
+    # -------------------------
+    # Plot com matplotlib
+    # -------------------------
+    plt.figure(figsize=(6, 5))
+    im = plt.imshow(cm_plot, interpolation="nearest", cmap="Blues")
+    plt.colorbar(im)
+
+    tick_marks = np.arange(len(class_names))
+    plt.xticks(tick_marks, class_names, rotation=45, ha="right")
+    plt.yticks(tick_marks, class_names)
+
+    plt.xlabel("Predicted label")
+    plt.ylabel("True label")
+
+    title = "Confusion Matrix"
+    if stage_name:
+        title += f" ({stage_name})"
+    if normalize:
+        title += " [Normalized]"
+
+    plt.title(title)
+
+    # Anota os valores
+    fmt = ".2f" if normalize else "d"
+    thresh = cm_plot.max() / 2.0
+
+    for i in range(cm_plot.shape[0]):
+        for j in range(cm_plot.shape[1]):
+            plt.text(
+                j, i,
+                format(cm_plot[i, j], fmt),
+                ha="center", va="center",
+                color="white" if cm_plot[i, j] > thresh else "black"
+            )
+
+    plt.tight_layout()
+
+    img_path = os.path.join(
+        output_dir,
+        f"{filename_prefix}{stage_suffix}.png"
+    )
+
+    plt.savefig(img_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    print(f"[OK] Confusion matrix salva:")
+    print(f"     JSON → {json_path}")
+    print(f"     PNG  → {img_path}")
 
 # ============================
 # callbacks
@@ -435,9 +546,14 @@ def train_subdataset(   patch_dataset_path,
         metrics_s1["recall"].append(rec)
         metrics_s1["f1-score"].append(f1)
 
-        cm_path = os.path.join(fold_path, f"val-confusion-matrix-stage1.json")
-        with open(cm_path, "w") as f:
-            json.dump(cm.tolist(), f, indent=4)
+        save_confusion_matrix(
+            cm=cm,
+            output_dir=fold_path,
+            filename_prefix="val-confusion-matrix",
+            class_names=["without-stone", "with-stone"],
+            stage_name="stage1",
+            normalize=False  # ou True se quiser %
+        )
         
         # ---------
         # STAGE 2: backbone destravado
@@ -495,9 +611,14 @@ def train_subdataset(   patch_dataset_path,
         metrics_s2["recall"].append(rec)
         metrics_s2["f1-score"].append(f1)
 
-        cm_path = os.path.join(fold_path, f"val-confusion-matrix-stage2.json")
-        with open(cm_path, "w") as f:
-            json.dump(cm.tolist(), f, indent=4)
+        save_confusion_matrix(
+            cm=cm,
+            output_dir=fold_path,
+            filename_prefix="val-confusion-matrix",
+            class_names=["without-stone", "with-stone"],
+            stage_name="stage2",
+            normalize=False  # ou True se quiser %
+        )
 
     # ---------
     # SALVA DADOS DE TREINO
