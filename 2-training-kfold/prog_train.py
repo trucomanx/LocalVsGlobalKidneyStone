@@ -98,7 +98,7 @@ def save_history_and_plots( history,
     plt.plot(hist_df["epoch"], hist_df["val_loss"], label="val")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.title("Validation Loss vs Epochs")
+    plt.title("Loss vs Epochs")
     plt.legend()
     plt.grid(True)
 
@@ -336,6 +336,14 @@ def train_subdataset(   patch_dataset_path,
                         
     os.makedirs(output_result_path, exist_ok=True)
 
+    metrics_s1 = {
+        "accuracy": [],
+        "precision": [],
+        "true-negative-rate": [],
+        "recall": [],
+        "f1-score": []
+    }
+    
     metrics_s2 = {
         "accuracy": [],
         "precision": [],
