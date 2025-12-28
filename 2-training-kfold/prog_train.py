@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import gc
 import random
 from tensorflow.keras import layers, models
 from tensorflow.keras.applications import (
@@ -565,6 +566,7 @@ def train_subdataset(   patch_dataset_path,
         # LOAD BEST MODEL
         # ---------
 
+        tf.keras.backend.clear_session()
         best_model_path = get_keras_model_name(fold_path, "stage1")
         model = tf.keras.models.load_model(best_model_path)
         
@@ -633,6 +635,7 @@ def train_subdataset(   patch_dataset_path,
         # LOAD BEST MODEL
         # ---------
 
+        tf.keras.backend.clear_session()
         best_model_path = get_keras_model_name(fold_path, "stage2")
         model = tf.keras.models.load_model(best_model_path)
         
@@ -660,6 +663,21 @@ def train_subdataset(   patch_dataset_path,
             stage_name="stage2",
             normalize=False  # ou True se quiser %
         )
+
+        # ==========================
+        # LIMPEZA DE MEMÓRIA (K-FOLD)
+        # ==========================
+        del model
+        del backbone
+        del train_ds
+        del val_ds
+        del y_true_all
+        del y_pred_all
+
+        tf.keras.backend.clear_session()
+        gc.collect()
+
+        print(f"[CLEANUP] Fold {fold} finalizado, memória liberada")
 
     # ---------
     # SALVA DADOS DE TREINO
