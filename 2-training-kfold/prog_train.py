@@ -223,6 +223,44 @@ def save_confusion_matrix(
     print(f"     JSON → {json_path}")
     print(f"     PNG  → {img_path}")
 
+
+def save_fold_metrics(metrics_dict, output_dir, stage_name):
+    """
+    metrics_dict: dict com accuracy, precision, etc (valores escalares)
+    output_dir : pasta do fold
+    stage_name : "stage1" ou "stage2"
+    """
+    path = os.path.join(output_dir, f"metrics-{stage_name}.json")
+    with open(path, "w") as f:
+        json.dump(metrics_dict, f, indent=4)
+
+    print(f"[OK] Métricas salvas em {path}")
+
+def aggregate_fold_metrics(output_result_path, num_folds, stage_name):
+    metrics = {
+        "accuracy": [],
+        "precision": [],
+        "true-negative-rate": [],
+        "recall": [],
+        "f1-score": []
+    }
+
+    for fold in range(num_folds):
+        fold_path = os.path.join(output_result_path, f"fold{fold}")
+        metrics_path = os.path.join(fold_path, f"metrics-{stage_name}.json")
+
+        if not os.path.isfile(metrics_path):
+            print(f"[WARN] {metrics_path} não encontrado → pulando fold {fold}")
+            continue
+
+        with open(metrics_path, "r") as f:
+            fold_metrics = json.load(f)
+
+        for k in metrics:
+            metrics[k].append(fold_metrics[k])
+
+    return metrics
+
 # ============================
 # callbacks
 # ============================
@@ -447,21 +485,7 @@ def train_subdataset(   patch_dataset_path,
                         
     os.makedirs(output_result_path, exist_ok=True)
 
-    metrics_s1 = {
-        "accuracy": [],
-        "precision": [],
-        "true-negative-rate": [],
-        "recall": [],
-        "f1-score": []
-    }
-    
-    metrics_s2 = {
-        "accuracy": [],
-        "precision": [],
-        "true-negative-rate": [],
-        "recall": [],
-        "f1-score": []
-    }
+    _, _, input_img_sz = build_model(model_type=model_type)
 
     for fold in range(num_folds):
         print(f"\n=== Fold {fold} ===")
@@ -470,10 +494,15 @@ def train_subdataset(   patch_dataset_path,
         
         fold_path = os.path.join(output_result_path,f"fold{fold}")
         os.makedirs(fold_path,exist_ok=True)
+        
+        verify_files = [
+            "metrics-stage2.json",
+            "val-confusion-matrix-stage2.json",
+            "best-model-stage2.keras"
+        ]
 
-        verify_file = os.path.join(fold_path,"val-confusion-matrix-stage2.json")
-        if os.path.isfile(verify_file):
-            print(f"{verify_file} file already exists → skipping")
+        if all(os.path.isfile(os.path.join(fold_path, f)) for f in verify_files):
+            print(f"[fold {fold}] já completo → pulando")
             continue
             
         # ---------
@@ -545,11 +574,15 @@ def train_subdataset(   patch_dataset_path,
         y_true_all, y_pred_all = evaluate_dataset(model, val_ds)
         acc, prec, tnr, rec, f1, cm = compute_metrics(y_true_all, y_pred_all)
         
-        metrics_s1["accuracy"].append(acc)
-        metrics_s1["precision"].append(prec)
-        metrics_s1["true-negative-rate"].append(tnr)
-        metrics_s1["recall"].append(rec)
-        metrics_s1["f1-score"].append(f1)
+        fold_metrics_s1 = {
+            "accuracy": acc,
+            "precision": prec,
+            "true-negative-rate": tnr,
+            "recall": rec,
+            "f1-score": f1
+        }
+        
+        save_fold_metrics(fold_metrics_s1, fold_path, "stage1")
 
         save_confusion_matrix(
             cm=cm,
@@ -610,11 +643,15 @@ def train_subdataset(   patch_dataset_path,
         y_true_all, y_pred_all = evaluate_dataset(model, val_ds)
         acc, prec, tnr, rec, f1, cm = compute_metrics(y_true_all, y_pred_all)
 
-        metrics_s2["accuracy"].append(acc)
-        metrics_s2["precision"].append(prec)
-        metrics_s2["true-negative-rate"].append(tnr)
-        metrics_s2["recall"].append(rec)
-        metrics_s2["f1-score"].append(f1)
+        fold_metrics_s2 = {
+            "accuracy": acc,
+            "precision": prec,
+            "true-negative-rate": tnr,
+            "recall": rec,
+            "f1-score": f1
+        }
+
+        save_fold_metrics(fold_metrics_s2, fold_path, "stage2")
 
         save_confusion_matrix(
             cm=cm,
@@ -648,12 +685,25 @@ def train_subdataset(   patch_dataset_path,
     # ---------
     # SALVA MÉTRICAS GERAIS
     # ---------
-    metrics_s2_path = os.path.join(output_result_path, "val-metrics-step2.json")
-    with open(metrics_path, "w") as f:
+    metrics_s1 = aggregate_fold_metrics(
+        output_result_path,
+        num_folds,
+        stage_name="stage1"
+    )
+
+    metrics_s2 = aggregate_fold_metrics(
+        output_result_path,
+        num_folds,
+        stage_name="stage2"
+    )
+
+    with open(os.path.join(output_result_path, "val-metrics-stage1.json"), "w") as f:
+        json.dump(metrics_s1, f, indent=4)
+
+    with open(os.path.join(output_result_path, "val-metrics-stage2.json"), "w") as f:
         json.dump(metrics_s2, f, indent=4)
 
     print("\nTreinamento finalizado.")
-    print("Métricas salvas em:", metrics_s2_path)
 
 # ============================
 # EXEMPLO DE USO
