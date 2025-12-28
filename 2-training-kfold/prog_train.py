@@ -597,15 +597,14 @@ def train_subdataset(   patch_dataset_path,
         # STAGE 2: backbone destravado
         # ---------
         backbone.trainable = True
-        for layer in backbone.layers:
-            # Congela todas as BatchNorm
+        for layer in backbone.layers[:-20]:
+            layer.trainable = False
+
+        for layer in backbone.layers[-20:]:
             if isinstance(layer, layers.BatchNormalization):
                 layer.trainable = False
             else:
                 layer.trainable = True
-        # Agora congela as camadas iniciais (ex: 20 primeiras)
-        for layer in backbone.layers[:-20]:
-            layer.trainable = False
 
         model.compile(
             optimizer=Adam(learning_rate_stage_2),
