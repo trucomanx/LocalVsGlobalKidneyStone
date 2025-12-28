@@ -465,11 +465,15 @@ def train_subdataset(   patch_dataset_path,
 
     for fold in range(num_folds):
         print(f"\n=== Fold {fold} ===")
-
+        
         model, backbone, input_img_sz = build_model(model_type=model_type)
         
         fold_path = os.path.join(output_result_path,f"fold{fold}")
         os.makedirs(fold_path,exist_ok=True)
+
+        if os.path.isfile(os.path.join(fold_path,"val-confusion-matrix-stage2.json")):
+            print(f"{arquivo} file already exists → skipping")
+            continue
             
         # ---------
         # STAGE 0: load dataset
