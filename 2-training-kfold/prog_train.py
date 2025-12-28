@@ -414,7 +414,6 @@ def build_model(model_type="EfficientNetV2S", num_classes=2):
         include_top=False,
         weights="imagenet",
         input_shape=(*image_sz, 3),
-        name="backbone"
     )
 
     backbone.trainable = False
@@ -571,7 +570,7 @@ def train_subdataset(   patch_dataset_path,
         tf.keras.backend.clear_session()
         best_model_path = get_keras_model_name(fold_path, "stage1")
         model = tf.keras.models.load_model(best_model_path)
-        backbone = model.get_layer("backbone")
+        backbone = model.layers[1] 
         
         # ---------
         # AVALIAÇÃO
@@ -641,7 +640,7 @@ def train_subdataset(   patch_dataset_path,
         tf.keras.backend.clear_session()
         best_model_path = get_keras_model_name(fold_path, "stage2")
         model = tf.keras.models.load_model(best_model_path)
-        backbone = model.get_layer("backbone")
+        backbone = model.layers[1] 
         
         # ---------
         # AVALIAÇÃO
