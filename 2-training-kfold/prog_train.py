@@ -355,8 +355,9 @@ def load_dataset_from_csv(  csv_path,
         label = tf.one_hot(label, num_classes)
         return img, label
 
-    ds = ds.map(_load_image, num_parallel_calls=tf.data.AUTOTUNE)
-    ds = ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    ds = ds.map(_load_image, num_parallel_calls=2)
+    ds = ds.batch(batch_size).prefetch(1)
+
 
     return ds
 
@@ -412,7 +413,8 @@ def build_model(model_type="EfficientNetV2S", num_classes=2):
     backbone = Backbone(
         include_top=False,
         weights="imagenet",
-        input_shape=(*image_sz, 3)
+        input_shape=(*image_sz, 3),
+        name="backbone"
     )
 
     backbone.trainable = False
@@ -425,7 +427,7 @@ def build_model(model_type="EfficientNetV2S", num_classes=2):
     outputs = layers.Dense(num_classes, activation="softmax")(x)
 
     model = models.Model(inputs, outputs)
-    return model, backbone, image_sz
+    return model, image_sz
 
 
 # ============================
@@ -486,12 +488,12 @@ def train_subdataset(   patch_dataset_path,
                         
     os.makedirs(output_result_path, exist_ok=True)
 
-    _, _, input_img_sz = build_model(model_type=model_type)
+    _, input_img_sz = build_model(model_type=model_type)
 
     for fold in range(num_folds):
         print(f"\n=== Fold {fold} ===")
         
-        model, backbone, input_img_sz = build_model(model_type=model_type)
+        model, input_img_sz = build_model(model_type=model_type)
         
         fold_path = os.path.join(output_result_path,f"fold{fold}")
         os.makedirs(fold_path,exist_ok=True)
@@ -569,6 +571,7 @@ def train_subdataset(   patch_dataset_path,
         tf.keras.backend.clear_session()
         best_model_path = get_keras_model_name(fold_path, "stage1")
         model = tf.keras.models.load_model(best_model_path)
+        backbone = model.get_layer("backbone")
         
         # ---------
         # AVALIAÇÃO
@@ -638,6 +641,7 @@ def train_subdataset(   patch_dataset_path,
         tf.keras.backend.clear_session()
         best_model_path = get_keras_model_name(fold_path, "stage2")
         model = tf.keras.models.load_model(best_model_path)
+        backbone = model.get_layer("backbone")
         
         # ---------
         # AVALIAÇÃO
