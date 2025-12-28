@@ -471,8 +471,9 @@ def train_subdataset(   patch_dataset_path,
         fold_path = os.path.join(output_result_path,f"fold{fold}")
         os.makedirs(fold_path,exist_ok=True)
 
-        if os.path.isfile(os.path.join(fold_path,"val-confusion-matrix-stage2.json")):
-            print(f"{arquivo} file already exists → skipping")
+        verify_file = os.path.join(fold_path,"val-confusion-matrix-stage2.json")
+        if os.path.isfile(verify_file):
+            print(f"{verify_file} file already exists → skipping")
             continue
             
         # ---------
