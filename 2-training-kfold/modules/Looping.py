@@ -113,7 +113,7 @@ def process_dataset(dataset_root,
         cb_rlr = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
 
         if lr is not None:
-            tf.keras.backend.set_value(model.optimizer.lr, lr)
+            tf.keras.backend.set_value(model.optimizer.learning_rate, lr)
 
         print(f"Training fold {fold} (epochs={epochs}, batch_size={batch_size})")
         history = model.fit(
