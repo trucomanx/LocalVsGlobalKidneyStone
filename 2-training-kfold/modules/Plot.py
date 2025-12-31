@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 def plot_dataset_images(dataset, class_names, n=32, title='Samples', seed=123):
     cols = int(math.sqrt(n))
