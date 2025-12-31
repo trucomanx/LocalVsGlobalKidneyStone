@@ -484,8 +484,8 @@ def train_subdataset(   patch_dataset_path,
                         early_stop_patience = 100, 
                         num_folds = 5,
                         my_seed = 42,
-                        zoom_out_factor=0.05,
-                        contrast_factor=0.05,
+                        zoom_out_factor=0.02,
+                        contrast_factor=0.01,
                         brightness_delta=0.05):
 
     tf.keras.utils.set_random_seed(my_seed)
