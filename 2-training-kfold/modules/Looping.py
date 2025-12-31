@@ -31,10 +31,10 @@ def process_dataset(dataset_root,
                     brightness_delta=0.05):
     
     # Seed   
-    tf.keras.utils.set_random_seed(my_seed)
-    tf.random.set_seed(my_seed)
-    np.random.seed(my_seed)
-    random.seed(my_seed)
+    tf.keras.utils.set_random_seed(seed)
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
     
     #
     dataset_root = Path(dataset_root)
