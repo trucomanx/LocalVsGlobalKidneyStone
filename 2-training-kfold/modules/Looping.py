@@ -77,7 +77,7 @@ def process_dataset(dataset_root,
             print("Warning: could not compute class weights, proceeding without. Error:", e)
             class_weight = None
 
-        model, img_size = build_model(model_name=model_name)
+        model, img_size = build_model(model_name=model_name, learning_rate=lr)
         
         train_ds = make_dataset(train_files, 
                                 train_labels, 
@@ -111,9 +111,6 @@ def process_dataset(dataset_root,
         cb_checkpoint = tf.keras.callbacks.ModelCheckpoint(str(best_model_path), monitor='val_loss', save_best_only=True)
         cb_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=early_stop, restore_best_weights=False)
         cb_rlr = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
-
-        if lr is not None:
-            tf.keras.backend.set_value(model.optimizer.learning_rate, lr)
 
         print(f"Training fold {fold} (epochs={epochs}, batch_size={batch_size})")
         history = model.fit(

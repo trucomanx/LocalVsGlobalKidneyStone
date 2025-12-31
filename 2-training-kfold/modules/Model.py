@@ -16,7 +16,7 @@ MODEL_MAP_SIZE =  {
 }
 
 
-def build_model(model_name='EfficientNetV2S', dropout=0.3):
+def build_model(model_name='EfficientNetV2S', dropout=0.3, learning_rate=1e-3):
     if model_name not in MODEL_MAP:
         raise ValueError(f"Unknown model_name: {model_name}. Available: {list(MODEL_MAP.keys())}")
     backbone_cls = MODEL_MAP[model_name]
@@ -28,9 +28,14 @@ def build_model(model_name='EfficientNetV2S', dropout=0.3):
     x = tf.keras.layers.Dropout(dropout)(x)
     outputs = tf.keras.layers.Dense(1, activation='sigmoid')(x)
 
+    if learning_rate is None:
+        optimizer = tf.keras.optimizers.Adam()
+    else:
+        optimizer = tf.keras.optimizers.Adam(learning_rate)
+
     model = tf.keras.Model(inputs, outputs, name=f"{model_name}_bincls")
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(),
+        optimizer=optimizer,
         loss=tf.keras.losses.BinaryCrossentropy(),
         metrics=[tf.keras.metrics.BinaryAccuracy(name='accuracy')]
     )
