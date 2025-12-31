@@ -119,7 +119,7 @@ def process_dataset(dataset_root,
             epochs=epochs,
             callbacks=[cb_checkpoint, cb_early, cb_rlr],
             class_weight=class_weight,
-            verbose=2
+            verbose=1
         )
 
         if best_model_path.exists():
