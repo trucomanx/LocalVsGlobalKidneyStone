@@ -39,7 +39,15 @@ def read_csv(csv_path, dataset_root):
 
 print('Arquivos `.csv` prontos')
 
-def make_dataset(filepaths, labels, img_size=(384, 384), batch_size=32, shuffle=True, augment=False, seed=123, zoom_out_factor=0.2, contrast_factor=0.2, brightness_delta=0.2):
+def make_dataset(   filepaths, 
+                    labels, 
+                    img_size=(384, 384), 
+                    batch_size=32, shuffle=True, 
+                    augment=False, 
+                    seed=123, 
+                    zoom_out_factor=0.2, 
+                    contrast_factor=0.2, 
+                    brightness_delta=0.2):
     AUTOTUNE = tf.data.AUTOTUNE
 
     def _load_image(path, label):
@@ -62,10 +70,14 @@ def make_dataset(filepaths, labels, img_size=(384, 384), batch_size=32, shuffle=
     if augment:
         data_augmentation = tf.keras.Sequential([
             tf.keras.layers.RandomFlip("horizontal_and_vertical"),
-            tf.keras.layers.RandomZoom(height_factor=(0.0, zoom_out_factor), width_factor=(0.0, zoom_out_factor)),
-            tf.keras.layers.RandomRotation(rotation_factor),
+            tf.keras.layers.RandomZoom(
+                height_factor=(-zoom_out_factor, 0.0),
+                width_factor=(-zoom_out_factor, 0.0),
+                fill_mode="constant",
+                fill_value=0.0
+            ),
             tf.keras.layers.RandomContrast(contrast_factor),
-            tf.keras.layers.Lambda(lambda x: tf.image.random_brightness(x, max_delta=brightness_delta)),
+            tf.keras.layers.RandomBrightness(brightness_delta)
         ], name="data_augmentation")
         ds = ds.map(lambda x, y: (data_augmentation(x, training=True), y), num_parallel_calls=AUTOTUNE)
 

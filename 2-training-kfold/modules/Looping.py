@@ -3,6 +3,10 @@ from modules.Model import build_model
 from modules.Plot import plot_dataset_images
 from modules.Metrics import compute_metrics_and_confmat
 
+import tensorflow as tf
+import numpy as np
+import random
+
 # Looping de treino
 #
 # Aqui se aciona o pipeline: para cada subdataset (arquivo de imagem do Dataset que esteja citado no `.csv`), ele lê os arquivos em questão, treina o modelo, salva o melhor modelo e grava as métricas em um arquivo `.json`.
@@ -25,6 +29,12 @@ def process_dataset(dataset_root,
                     zoom_out_factor=0.02, 
                     contrast_factor=0.01, 
                     brightness_delta=0.05):
+                    
+    tf.keras.utils.set_random_seed(my_seed)
+    tf.random.set_seed(my_seed)
+    np.random.seed(my_seed)
+    random.seed(my_seed)
+    
     dataset_root = Path(dataset_root)
     output_root = Path(output_root)
 
@@ -80,8 +90,23 @@ def process_dataset(dataset_root,
 
             model, img_size = build_model(model_name=model_name)
             
-            train_ds = make_dataset(train_files, train_labels, img_size=img_size, batch_size=batch_size, shuffle=False, augment=True, seed=seed, zoom_out_factor=zoom_out_factor, contrast_factor=contrast_factor, brightness_delta=brightness_delta)
-            val_ds = make_dataset(val_files, val_labels, img_size=img_size, batch_size=batch_size, shuffle=False, augment=False)
+            train_ds = make_dataset(train_files, 
+                                    train_labels, 
+                                    img_size=img_size, 
+                                    batch_size=batch_size, 
+                                    shuffle=False, 
+                                    augment=True, 
+                                    seed=seed, 
+                                    zoom_out_factor=zoom_out_factor, 
+                                    contrast_factor=contrast_factor, 
+                                    brightness_delta=brightness_delta)
+            
+            val_ds = make_dataset(  val_files, 
+                                    val_labels, 
+                                    img_size=img_size, 
+                                    batch_size=batch_size, 
+                                    shuffle=False, 
+                                    augment=False)
 
             class_names = ['normal', 'stone']
 

@@ -10,8 +10,8 @@ MODEL_MAP = {
 }
 
 MODEL_MAP_SIZE =  {
-    'EfficientNetV2S': (384, 384),
-    'EfficientNetV2M': (480, 480)
+    'EfficientNetV2S': (224, 224), #(384, 384),
+    'EfficientNetV2M': (224, 224) #(480, 480)
 # Adicionar outros modelos AQUI e lembrar de trocar o nome do usado atualmente
 }
 

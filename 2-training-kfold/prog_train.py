@@ -370,22 +370,26 @@ def load_dataset_from_csv(  csv_path,
 # ============================
 # Data augmentation
 # ============================
-def get_augmentation(my_seed=42):
+def get_augmentation(   my_seed=42,
+                        zoom_out_factor=0.05,
+                        contrast_factor=0.05,
+                        brightness_delta=0.05):
     return tf.keras.Sequential([
-        layers.RandomFlip("horizontal", seed=my_seed),
+        layers.RandomFlip("horizontal_and_vertical"),
         layers.RandomZoom(
-            height_factor=(-0.1, 0.0),
-            width_factor=(-0.1, 0.0),
+            height_factor=(-zoom_out_factor, 0.0),
+            width_factor=(-zoom_out_factor, 0.0),
             fill_mode="constant",
             fill_value=0.0
         ),
-        layers.RandomBrightness(0.05),
         #layers.GaussianNoise(0.005),
+        layers.RandomContrast(contrast_factor),
+        layers.RandomBrightness(brightness_delta)
     ], name="data_augmentation")
 # ============================
 # MODELO
 # ============================
-def build_model(model_type="EfficientNetV2S", num_classes=2):
+def build_model(model_type="EfficientNetV2S", dropout=0.3, num_classes=2):
 
     if model_type == "EfficientNetV2S":
         Backbone = EfficientNetV2S
@@ -422,7 +426,7 @@ def build_model(model_type="EfficientNetV2S", num_classes=2):
     x = backbone(inputs)
     x = layers.GlobalAveragePooling2D()(x)
     x = layers.Dense(128, activation="relu")(x)
-    x = layers.Dropout(0.3)(x)
+    x = layers.Dropout(dropout)(x)
     outputs = layers.Dense(num_classes, activation="softmax")(x)
 
     model = models.Model(inputs, outputs)
@@ -479,8 +483,12 @@ def train_subdataset(   patch_dataset_path,
                         learning_rate_stage_2 = 1e-4, 
                         early_stop_patience = 100, 
                         num_folds = 5,
-                        my_seed = 42):
-                        
+                        my_seed = 42,
+                        zoom_out_factor=0.05,
+                        contrast_factor=0.05,
+                        brightness_delta=0.05):
+
+    tf.keras.utils.set_random_seed(my_seed)
     tf.random.set_seed(my_seed)
     np.random.seed(my_seed)
     random.seed(my_seed)
@@ -514,7 +522,10 @@ def train_subdataset(   patch_dataset_path,
         train_csv = os.path.join(patch_dataset_path, f"train{fold}.csv")
         val_csv = os.path.join(patch_dataset_path, f"val{fold}.csv")
         
-        augmentation_func = get_augmentation(my_seed=my_seed)
+        augmentation_func = get_augmentation(   my_seed=my_seed,
+                                                zoom_out_factor=zoom_out_factor,
+                                                contrast_factor=contrast_factor,
+                                                brightness_delta=brightness_delta)
 
         train_ds = load_dataset_from_csv(
             train_csv,
