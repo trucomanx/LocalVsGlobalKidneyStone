@@ -5,3 +5,4 @@
 /1-dataset-processing/dp_utils/__pycache__/
 /2-training-kfold/modules/__pycache__/
 /2-training-kfold/modules/.ipynb_checkpoints
+/3-report/output_tables/
