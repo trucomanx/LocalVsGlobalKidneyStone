@@ -121,6 +121,45 @@ def _write_tex(output_dir: str, filename: str, content: str) -> None:
     print(f"  Wrote: {path}")
 
 
+def _write_figure_tex(directory: str, stem: str,
+                      caption: str, label: str) -> None:
+    """
+    Writes a .tex file with a descriptive sentence + figure environment.
+    The image is referenced by stem only (no path), resolving from the
+    document root in LaTeX.
+
+    stem   : filename without extension (e.g. "all_metrics")
+    caption: figure caption text (may contain LaTeX markup)
+    label  : LaTeX label (e.g. "fig:all_metrics")
+    """
+    if stem == "all_metrics":
+        intro = (
+            "Fig.~\\ref{" + label + "} shows the evolution of all validation metrics "
+            "as a function of patch size, with error bars representing "
+            "$\\pm$ one standard deviation across the 5 folds."
+        )
+    else:
+        metric_name = caption.split(" vs")[0]
+        intro = (
+            "Fig.~\\ref{" + label + "} shows the evolution of the "
+            "\\textit{" + metric_name + "} metric as a function of patch size, "
+            "with error bars representing $\\pm$ one standard deviation across the 5 folds."
+        )
+
+    lines = [
+        intro,
+        "",
+        "\\begin{figure}[!htb]",
+        "    \\centering",
+        "    \\includegraphics[width=\\linewidth]{" + stem + "}",
+        "    \\caption{" + caption + "}",
+        "    \\label{" + label + "}",
+        "\\end{figure}",
+    ]
+
+    _write_tex(directory, stem + ".tex", "\n".join(lines))
+
+
 # ===========================================================================
 # TABLE 1 — Cross-validation results (mean ± std + 95% CI)
 # ===========================================================================
@@ -159,7 +198,14 @@ def generate_cv_results_table(datasets: dict[int, dict],
         rows_mean.append(" & ".join(mean_cells) + r" \\")
         rows_ci.append(  " & ".join(ci_cells)   + r" \\")
 
+    intro = (
+        r"Table~\ref{tab:cv_results} presents the 5-fold cross-validation results "
+        r"for each dataset, reported as mean $\pm$ standard deviation and 95\% "
+        r"confidence intervals across folds."
+    )
+
     lines = [
+        intro+"\n\n",
         r"\begin{table}[!htb]",
         r"\centering",
         r"\caption{Cross-validation results (mean $\pm$ std and 95\% CI) "
@@ -213,7 +259,15 @@ def generate_shapiro_table(datasets: dict[int, dict],
             rf"{{\small Note: n=5 per group limits test power. "
             rf"Bold indicates rejection of normality ($p < {ALPHA}$).}}  \\")
 
+    intro = (
+        r"Table~\ref{tab:shapiro} reports the Shapiro-Wilk statistic ($W$) and "
+        r"corresponding $p$-value for each dataset and metric. "
+        r"Values in bold indicate rejection of the normality hypothesis ($p < 0.05$). "
+        r"Note that with $n=5$ observations per group, the test has limited statistical power."
+    )
+
     lines = [
+        intro+"\n\n",
         r"\begin{table}[!htb]",
         r"\centering",
         r"\caption{Shapiro-Wilk normality test results ($W$ / $p$-value) "
@@ -290,7 +344,16 @@ def generate_ttest_tables(datasets: dict[int, dict],
                 rf"{ALPHA / (n*(n-1)//2):.4f}.}}  \\")
 
         filename = f"table_ttest_{key.replace('-','_')}.tex"
+        intro = (
+            rf"Table~\ref{{tab:ttest_{key.replace('-','_')}}} presents the $p$-values "
+            rf"of pairwise one-sided Welch's $t$-tests for \textit{{{metric_label}}}. "
+            r"Each cell $(X, Y)$ contains the $p$-value for the hypothesis that "
+            r"the mean of dataset $X$ is greater than the mean of dataset $Y$. "
+            rf"Values in bold indicate statistical significance at $\alpha = {ALPHA}$."
+        )
+
         lines = [
+            intro+"\n\n",
             r"\begin{table}[!htb]",
             r"\centering",
             rf"\caption{{Pairwise $t$-test $p$-values for \textit{{{metric_label}}}. "
@@ -315,6 +378,210 @@ def generate_ttest_tables(datasets: dict[int, dict],
 
 
 # ===========================================================================
+# TABLE 4 — Training arguments (one .tex per dataset)
+# ===========================================================================
+
+def generate_train_args_tables(datasets: dict[int, dict],
+                                output_dir: str) -> None:
+    """
+    One .tex file per dataset, saved under <output_dir>/train-arguments/dataset-X.tex
+    Each file contains a two-column table (Parameter / Value) describing the
+    training hyperparameters from variables.json, grouped into three sections:
+        - General
+        - Stage 1 (Transfer Learning)
+        - Stage 2 (Fine-tuning)
+    """
+
+    # Display names and grouping for known keys in variables.json
+    # key -> (display_name, group)
+    # group: "general" | "stage1" | "stage2"
+    PARAM_MAP = {
+        "model":                 ("Model",               "general"),
+        "image_size":            ("Image size",          "general"),
+        "batch_size":            ("Batch size",          "general"),
+        "my_seed":               ("Random seed",         "general"),
+        "learning_rate_stage_1": ("Learning rate",       "stage1"),
+        "epochs_stage_1":        ("Epochs",              "stage1"),
+        "learning_rate_stage_2": ("Learning rate",       "stage2"),
+        "epochs_stage_2":        ("Epochs",              "stage2"),
+        "early_stop_patience":   ("Early stop patience", "stage2"),
+    }
+
+    SECTION_LABELS = {
+        "general": "General",
+        "stage1":  "Stage 1 --- Transfer Learning",
+        "stage2":  "Stage 2 --- Fine-tuning",
+    }
+
+    train_args_path = os.path.join(output_dir, "train-arguments")
+
+    for size, data in datasets.items():
+        v = data["variables"]
+
+        def fmt_value(key: str) -> str:
+            val = v.get(key, "---")
+            if key == "image_size" and isinstance(val, list):
+                return rf"${val[0]} \times {val[1]}$"
+            return str(val)
+
+        rows = []
+        current_group = None
+
+        for key, (display_name, group) in PARAM_MAP.items():
+            if key not in v:
+                continue
+
+            # Insert section header row when group changes
+            if group != current_group:
+                current_group = group
+                label = SECTION_LABELS[group]
+                rows.append(
+                    rf"\multicolumn{{2}}{{l}}{{\textit{{{label}}}}} \\"
+                )
+                rows.append(r"\midrule")
+
+            rows.append(rf"\quad {display_name} & {fmt_value(key)} \\")
+
+        intro = (
+            rf"Table~\ref{{tab:train_args_{size}}} summarizes the training "
+            rf"configuration used for the dataset with ${size} \times {size}$ px patches, "
+            r"including general hyperparameters and the settings for each of the "
+            r"two training stages."
+        )
+
+        lines = [
+            intro+"\n\n",
+            r"\begin{table}[!htb]",
+            r"\centering",
+            rf"\caption{{Training configuration for the dataset with "
+            rf"${size} \times {size}$ px patches.}}",
+            rf"\label{{tab:train_args_{size}}}",
+            r"\begin{tabular}{ll}",
+            r"\toprule",
+            r"Parameter & Value \\",
+            r"\midrule",
+            *rows,
+            r"\bottomrule",
+            r"\end{tabular}",
+            r"\end{table}",
+        ]
+
+        _write_tex(train_args_path, f"dataset-{size}.tex", "\n".join(lines))
+
+
+
+# ===========================================================================
+# PLOTS — metric scores vs patch size
+# ===========================================================================
+
+def generate_plots(datasets: dict[int, dict], output_dir: str) -> None:
+    """
+    Generates two sets of plots saved as PDF under <output_dir>/plots/:
+
+    1. plots/all_metrics.pdf
+       All metrics on a single figure, one line per metric.
+       X-axis: patch size (px). Y-axis: score.
+       Error bars: ± std across the 5 folds.
+
+    2. plots/metrics/<metric_key>.pdf
+       One figure per metric, showing mean ± std across patch sizes.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    sizes       = list(datasets.keys())
+    metric_keys = list(METRICS.keys())
+
+    # Pre-compute means and stds for every metric and size
+    # means[key] = list of mean values, one per size (same order as sizes)
+    means = {key: [] for key in metric_keys}
+    stds  = {key: [] for key in metric_keys}
+
+    for size in sizes:
+        mdata = datasets[size]["metrics"]
+        for key in metric_keys:
+            vals = np.array(mdata[key])
+            means[key].append(float(np.mean(vals)))
+            stds[key].append(float(np.std(vals, ddof=1)))
+
+    plots_dir   = os.path.join(output_dir, "plots")
+    metrics_dir = os.path.join(plots_dir,  "metrics")
+    os.makedirs(metrics_dir, exist_ok=True)
+
+    # ── Shared style ──────────────────────────────────────────────────────────
+    STYLE = {
+        "marker":    "o",
+        "capsize":   4,
+        "linewidth": 1.5,
+        "markersize": 5,
+    }
+
+    # ── 1. All metrics on a single figure ─────────────────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+
+    for key in metric_keys:
+        ax.errorbar(
+            sizes, means[key], yerr=stds[key],
+            label=METRICS[key],
+            **STYLE,
+        )
+
+    ax.set_xlabel("Patch size (px)")
+    ax.set_ylabel("Score")
+    ax.set_title("Validation metrics vs patch size")
+    ax.set_xticks(sizes)
+    ax.legend(loc="best", fontsize=9)
+    ax.grid(True, linestyle="--", alpha=0.5)
+    fig.tight_layout()
+
+    out_path = os.path.join(plots_dir, "all_metrics.pdf")
+    fig.savefig(out_path, format="pdf")
+    plt.close(fig)
+    print(f"  Wrote: {out_path}")
+
+    _write_figure_tex(
+        directory = plots_dir,
+        stem      = "all_metrics",
+        caption   = r"Validation metrics vs patch size. Each curve represents one metric; "
+                    r"error bars indicate $\pm$ one standard deviation across the 5 folds.",
+        label     = "fig:all_metrics",
+    )
+
+    # ── 2. Individual metric figures ──────────────────────────────────────────
+    for key in metric_keys:
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+        ax.errorbar(
+            sizes, means[key], yerr=stds[key],
+            color="steelblue",
+            label=METRICS[key],
+            **STYLE,
+        )
+
+        ax.set_xlabel("Patch size (px)")
+        ax.set_ylabel("Score")
+        ax.set_title(f"{METRICS[key]} vs patch size")
+        ax.set_xticks(sizes)
+        ax.legend(loc="best", fontsize=9)
+        ax.grid(True, linestyle="--", alpha=0.5)
+        fig.tight_layout()
+
+        fname    = f"{key.replace('-', '_')}.pdf"
+        out_path = os.path.join(metrics_dir, fname)
+        fig.savefig(out_path, format="pdf")
+        plt.close(fig)
+        print(f"  Wrote: {out_path}")
+
+        _write_figure_tex(
+            directory = metrics_dir,
+            stem      = key.replace("-", "_"),
+            caption   = f"{METRICS[key]} vs patch size. "
+                        r"Error bars indicate $\pm$ one standard deviation across the 5 folds.",
+            label     = f"fig:{key.replace('-', '_')}",
+        )
+
+# ===========================================================================
 # MAIN
 # ===========================================================================
 
@@ -331,6 +598,8 @@ def main():
     generate_cv_results_table(datasets, OUTPUT_DIR)
     generate_shapiro_table(datasets, OUTPUT_DIR)
     generate_ttest_tables(datasets, OUTPUT_DIR)
+    generate_train_args_tables(datasets, OUTPUT_DIR)
+    generate_plots(datasets, OUTPUT_DIR)
 
     print("\nDone.")
 
