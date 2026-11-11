@@ -3,3 +3,6 @@ matplotlib
 opencv-python
 tqdm
 kaggle
+six
+natsort
+scikit-learn

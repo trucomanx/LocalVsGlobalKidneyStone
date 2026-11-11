@@ -1,46 +1,70 @@
 #!/bin/bash
 
-BASE_DIR="data/dataset-article"
-DEST_DIR="/media/fernando/INFORMATION/0-DATASET/KIDNEY"
+SRC_DIR="${1:-dataset-source}"
+DEST_DIR="${2:-dataset-stats}"
+GENERATE_ZIP="${3:---zip}"
 
+################################################################################
+TMP_DIR="temp_dir"
 
-if [ ! -d "$DEST_DIR" ]; then
-    echo "❌ Errot: The directory $DEST_DIR does not exist."
+mkdir -p "$DEST_DIR"
+
+if [ ! -d "$SRC_DIR" ]; then
+    echo "❌ Error: The directory $SRC_DIR does not exist."
     exit 1
 fi
 
-#: <<'COMMENT'
-#for size in $(seq 96 8 344); do
 for size in $(seq 96 8 104); do
     echo "=== Processing size $size ==="
 
-    # 1. Executa o comando para gerar o dataset
-    python prog_generate.py -ps "$size"
+    # 1. Generate dataset
+    python3 ./src/prog_generate.py -ds "$SRC_DIR" -do "$TMP_DIR" -ps "$size"
 
-    DATASET_DIR="$BASE_DIR/dataset-$size"
-    ZIP_FILE="dataset-$size.zip"
+    SUBDATASET_NAME="dataset-$size"
 
-    # 2. Compacta a pasta
-    if [ -d "$DATASET_DIR" ]; then
-        echo "Compacting $DATASET_DIR in $ZIP_FILE..."
-        zip -rq "$ZIP_FILE" "$DATASET_DIR"
+    if [ -d "$TMP_DIR/$SUBDATASET_NAME" ]; then
 
-        # 3. Remove a pasta
-        echo "Removing directory $DATASET_DIR..."
-        rm -rf "$DATASET_DIR"
+        # 2. Copy report.json
+        mkdir -p "$DEST_DIR/jsons/"
+        cp -p "$TMP_DIR/$SUBDATASET_NAME/report.json" \
+              "$DEST_DIR/jsons/$SUBDATASET_NAME.json"
 
-        # 4. Move o zip para o destino
-        echo "Moving $ZIP_FILE to $DEST_DIR..."
-        mv "$ZIP_FILE" "$DEST_DIR/"
+        # 3. Generate ZIP only if requested
+        if [ "$GENERATE_ZIP" = "--zip" ]; then
+
+            cd "$TMP_DIR" || exit 1
+
+            ZIP_FILE="$SUBDATASET_NAME.zip"
+
+            echo "Compacting $SUBDATASET_NAME in $ZIP_FILE..."
+            zip -rq "$ZIP_FILE" "$SUBDATASET_NAME"
+
+            cd .. || exit 1
+
+            echo "Moving $ZIP_FILE to $DEST_DIR/zips..."
+            mkdir -p "$DEST_DIR/zips/"
+            mv "$TMP_DIR/$ZIP_FILE" "$DEST_DIR/zips/"
+
+        fi
+
+        # 4. Remove temporary dataset directory
+        echo "Removing directory $SUBDATASET_NAME..."
+        rm -rf "$TMP_DIR/$SUBDATASET_NAME"
+
     else
-        echo "❌ Pasta $DATASET_DIR não encontrada, pulando..."
+        echo "❌ Directory $TMP_DIR/$SUBDATASET_NAME not found, skipping..."
     fi
 
     echo
 done
 
-echo "✅ Process completed!"
-#COMMENT
+echo "✅ Processing completed!"
 
-python3 dp_utils/dataset_report.py --input_dir $DEST_DIR  --output_dir $DEST_DIR
+# 5. Remove temporary directory
+rm -rf "$TMP_DIR"
+
+# 6. Generate consolidated report
+python3 ./src/prog_dataset_report.py \
+    --input_dir "$DEST_DIR/jsons" \
+    --output_dir "$DEST_DIR"
 

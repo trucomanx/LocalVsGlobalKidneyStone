@@ -6,11 +6,20 @@ import matplotlib.pyplot as plt
 import cv2
 from natsort import natsorted
 
+
 try:
-    # Jupyter / Colab
-    from tqdm.notebook import tqdm
+    from IPython import get_ipython
+
+    shell = get_ipython()
+
+    if shell is not None and shell.__class__.__name__ == "ZMQInteractiveShell":
+        # Jupyter Notebook / JupyterLab
+        from tqdm.notebook import tqdm
+    else:
+        # Terminal / Python script
+        from tqdm import tqdm
+
 except ImportError:
-    # Terminal / script normal
     from tqdm import tqdm
 
 

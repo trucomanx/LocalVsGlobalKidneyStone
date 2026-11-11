@@ -35,17 +35,40 @@ def generate_dataset(ds_path,base_out_path,patch_size,classes=["stone"]):
 
     return out_path
 
+
 if __name__ == "__main__":
-    
-    ds_path = "data/dataset-source/"
-    out_path = 'data/dataset-article/'
+
     CLASSES = ["stone"]
 
     parser = argparse.ArgumentParser(description="Image patches processing")
-    parser.add_argument("-ps", "--patch_size", required=True, type=int)
+
+    parser.add_argument(
+        "-ds", "--dataset_source",
+        required=True,
+        type=str,
+        help="Source dataset directory (example: data/dataset-source)"
+    )
+
+    parser.add_argument(
+        "-do", "--dataset_output",
+        required=True,
+        type=str,
+        help="Output dataset directory (example: data/dataset-article)"
+    )
+
+    parser.add_argument(
+        "-ps", "--patch_size",
+        required=True,
+        type=int,
+        help="Image patch size"
+    )
+
     args = parser.parse_args()
-    
-    patch_size = args.patch_size
-    
-    generate_dataset(ds_path,out_path,patch_size,CLASSES)
+
+    generate_dataset(
+        ds_path=args.dataset_source,
+        base_out_path=args.dataset_output,
+        patch_size=args.patch_size,
+        classes=CLASSES
+    )
 

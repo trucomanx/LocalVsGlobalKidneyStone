@@ -42,7 +42,7 @@ The code splits input medical images into **patches** (sub-images) and generates
 
 ---
 
-## ⚙️ Installation
+## ⚙️ Requirements
 
 Clone the repository and install dependencies with:
 
@@ -50,52 +50,44 @@ Clone the repository and install dependencies with:
 pip install -r requirements.txt
 ```
 
+---
+## ▶️ Installation
+
+
+### Download dataset source
 Download the dataset from Kaggle, first generate the file `~/.kaggle/kaggle.json`, then
 
 ```
-OUTDIR="data/dataset-source/stone/"
-kaggle datasets download -d murillobouzon/kssd2025-kidney-stone-segmentation-dataset -p tmpdat/ --unzip
-mkdir -p $OUTDIR/stone
-cp -rf tmpdat/data/image $OUTDIR/stone/
-cp -rf tmpdat/data/label $OUTDIR/stone/
-rm -rf tmpdat/
+./download-source.sh "dataset-source/stone" 
 ```
----
 
-## ▶️ Usage
-
+### Generate dataset <PATCH_SIZE>
 Run the prog_generate script with a patch size:
 
 ```bash
-# Args: --patch_size or -ps
-python prog_generate.py -ps <PATCH_SIZE>
-
+python prog_generate.py -ds <PATH_TO_SOURCE> -do <PATH_TO_OUTPUT> -ps <PATCH_SIZE>
 ```
 
----
-## ▶️ Dataset generation
+Example:
 
-This example generates only one dataset.
-
-```bash
-python prog_generate.py -ps 224
+``bash
+python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 48
+python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 56
+python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 64
+python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 72
+python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 80
+python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 88
+python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 96
 ```
 
-This example generates the entire set of datasets in Ubuntu's `bash`.
-
-```bash
-for ps in $(seq 64 8 224); do
-    python3 prog_generate.py -ps $ps
-done
-```
 
 ### Description
 This will:
-1. Split all images in `data/dataset-source/` into **patches**.
+1. Split all images in `dataset-source/` into **patches**.
 2. Save them into:
    ```
-   data/dataset-article/dataset-*/with-stone/
-   data/dataset-article/dataset-*/without-stone/
+   dataset-article/dataset-<PATCH_SIZE>/with-stone/
+   dataset-article/dataset-<PATCH_SIZE>/without-stone/
    ```
 3. Generate **5-fold train/val CSV files** inside the same folder:
    - `train0.csv`, `val0.csv`
@@ -111,7 +103,7 @@ This will:
 For a dataset generated with `-ps 224`, the output directory looks like:
 
 ```
-data/dataset-article/dataset-224/
+dataset-article/dataset-224/
 │
 ├── with-stone/
 │   ├── imagestone0-patch0.png
@@ -140,5 +132,4 @@ without-stone/imagenormal0-patch0.png,0
 ```
 ---
 
-## 📜 License
-MIT License. Free to use and modify.
+
