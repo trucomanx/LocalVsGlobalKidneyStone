@@ -17,6 +17,80 @@ def binary_entropy(p):
     return -p * math.log2(p) - (1 - p) * math.log2(1 - p)
 
 
+
+def generate_latex_table(datasets_info, output_dir, output_tex="datasets_info.tex"):
+
+    output_path = os.path.join(output_dir, output_tex)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+
+        # Introduction and table description
+        f.write(
+            "Table~\\\\ref{tab:datasets_info} summarizes the composition "
+            "of the generated datasets for each patch size. "
+            "The first column indicates the patch size in pixels. "
+            "The second and third columns show the proportions of images "
+            "with and without kidney stones, respectively, normalized "
+            "by the total number of images; therefore, these two "
+            "proportions sum to one. "
+            "The fourth column presents the binary entropy computed "
+            "from these proportions, expressed in bits. "
+            "Finally, the fifth column reports the total number of "
+            "images in each dataset.\n\n"
+        )
+
+        # Table
+        f.write("\\begin{table}[htbp]\n")
+        f.write("\\centering\n")
+        f.write("\\caption{Dataset composition and binary entropy for different patch sizes.}\n")
+        f.write("\\label{tab:datasets_info}\n")
+        f.write("\\begin{tabular}{rrrrr}\n")
+        f.write("\\hline\n")
+
+        f.write(
+            "Patch size & "
+            "With-stone & "
+            "Without-stone & "
+            "Entropy (bits) & "
+            "Total images \\\\\n"
+        )
+
+        f.write("\\hline\n")
+
+        # Dataset rows
+        for patch_size in sorted(datasets_info.keys()):
+
+            data = datasets_info[patch_size]
+
+            with_stone = data["with-stone"]
+            without_stone = data["without-stone"]
+
+            total = with_stone + without_stone
+
+            if total == 0:
+                p_stone = 0.0
+                p_without_stone = 0.0
+                entropy = 0.0
+            else:
+                p_stone = with_stone / total
+                p_without_stone = without_stone / total
+                entropy = binary_entropy(p_stone)
+
+            f.write(
+                f"{patch_size} & "
+                f"{p_stone:.4f} & "
+                f"{p_without_stone:.4f} & "
+                f"{entropy:.4f} & "
+                f"{total} \\\\\n"
+            )
+
+        f.write("\\hline\n")
+        f.write("\\end{tabular}\n")
+        f.write("\\end{table}\n")
+
+    print(f"📄 Generated: {output_tex}")
+
+
 def get_dataset_dict(input_dir):
 
     json_folder = Path(input_dir)
@@ -176,6 +250,8 @@ def dataset_report(input_dir, output_dir):
         json.dump(datasets_info, f, indent=4, ensure_ascii=False)
 
     print(f"💾 Saved: {output_json}")
+
+    generate_latex_table(datasets_info, output_dir)
 
     # Plots
     plot_percentage_with_stone(datasets_info, output_dir)
