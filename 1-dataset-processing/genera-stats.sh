@@ -14,7 +14,7 @@ if [ ! -d "$SRC_DIR" ]; then
     exit 1
 fi
 
-for size in $(seq 96 8 104); do
+for size in $(seq 48 8 96); do
     echo "=== Processing size $size ==="
 
     # 1. Generate dataset
@@ -63,8 +63,4 @@ echo "✅ Processing completed!"
 # 5. Remove temporary directory
 rm -rf "$TMP_DIR"
 
-# 6. Generate consolidated report
-python3 ./src/prog_dataset_report.py \
-    --input_dir "$DEST_DIR/jsons" \
-    --output_dir "$DEST_DIR"
 

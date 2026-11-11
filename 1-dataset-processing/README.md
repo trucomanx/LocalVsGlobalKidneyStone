@@ -3,7 +3,6 @@
 This repository contains Python scripts for **image preprocessing and dataset generation** for kidney stone classification.  
 The code splits input medical images into **patches** (sub-images) and generates structured datasets for training machine learning models.
 
----
 
 ## ⚙️ Requirements
 
@@ -13,7 +12,7 @@ Clone the repository and install dependencies with:
 pip install -r requirements.txt
 ```
 
----
+
 ## ▶️ Installation
 
 
@@ -42,7 +41,6 @@ python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 80
 python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 88
 python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 96
 ```
-
 
 #### Description
 This will:
@@ -91,11 +89,14 @@ with-stone/imagestone0-patch0.png,1
 without-stone/imagenormal0-patch0.png,0
 ...,...
 ```
----
+
 ## 📊 Generate statistics
 
 
 ```bash
 ./genera-stats.sh "dataset-source" "dataset-stats"
+python3 ./src/prog_stat_report.py \
+    --input_dir "dataset-stats/jsons" \
+    --output_dir "dataset-stats"
 ```
 
