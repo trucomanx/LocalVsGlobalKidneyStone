@@ -1,3 +1,5 @@
+import argparse
+
 """
 generate_tables.py
 ------------------
@@ -585,16 +587,45 @@ def generate_plots(datasets: dict[int, dict], output_dir: str) -> None:
 # MAIN
 # ===========================================================================
 
+
 def main():
-    INPUT_DIR  = "/media/fernando/INFORMATION/KIDNEY/ResNet50/"          # directory containing dataset-X subfolders
-    OUTPUT_DIR = "./output_tables"   # directory where .tex files will be saved
-    
+
+    parser = argparse.ArgumentParser(
+        description="Generate LaTeX tables and plots from cross-validation results."
+    )
+
+    parser.add_argument(
+        "-i", "--input_dir",
+        required=True,
+        type=str,
+        help="Input directory containing dataset-X subdirectories."
+    )
+
+    parser.add_argument(
+        "-o", "--output_dir",
+        required=True,
+        type=str,
+        help="Output directory for generated tables, figures and reports."
+    )
+
+    args = parser.parse_args()
+
+    INPUT_DIR = args.input_dir
+    OUTPUT_DIR = args.output_dir
+
+    if not os.path.isdir(INPUT_DIR):
+        parser.error(f"Input directory does not exist: {INPUT_DIR}")
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
     print(f"Loading datasets from: {INPUT_DIR}")
+
     datasets = load_datasets(INPUT_DIR)
-    
+
     print(f"Found {len(datasets)} datasets: sizes = {list(datasets.keys())}")
 
     print("\nGenerating tables...")
+
     generate_cv_results_table(datasets, OUTPUT_DIR)
     generate_shapiro_table(datasets, OUTPUT_DIR)
     generate_ttest_tables(datasets, OUTPUT_DIR)
@@ -606,3 +637,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
