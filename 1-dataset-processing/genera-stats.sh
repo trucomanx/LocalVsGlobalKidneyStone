@@ -2,7 +2,7 @@
 
 SRC_DIR="${1:-dataset-source}"
 DEST_DIR="${2:-dataset-stats}"
-GENERATE_ZIP="${3:---zip}"
+GENERATE_ZIP="${3:-}"
 
 ################################################################################
 TMP_DIR="temp_dir"
