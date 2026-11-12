@@ -15,5 +15,6 @@
     ```bash
     python3 report.py \
         -i "/run/media/fernando/TOSHIBA-2TB/WORKS/KIDNEY/RESULTS/ResNet50" \
-        -o "./report"
+        -o "./report" \
+        --figsize 6 4
     ```

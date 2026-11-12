@@ -476,7 +476,9 @@ def generate_train_args_tables(datasets: dict[int, dict],
 # PLOTS — metric scores vs patch size
 # ===========================================================================
 
-def generate_plots(datasets: dict[int, dict], output_dir: str) -> None:
+def generate_plots( datasets: dict[int, dict], 
+                    output_dir: str,
+                    figsize=(7, 4.5)) -> None:
     """
     Generates two sets of plots saved as PDF under <output_dir>/plots/:
 
@@ -520,7 +522,7 @@ def generate_plots(datasets: dict[int, dict], output_dir: str) -> None:
     }
 
     # ── 1. All metrics on a single figure ─────────────────────────────────────
-    fig, ax = plt.subplots(figsize=(7, 4.5))
+    fig, ax = plt.subplots(figsize=figsize)
 
     for key in metric_keys:
         ax.errorbar(
@@ -533,7 +535,7 @@ def generate_plots(datasets: dict[int, dict], output_dir: str) -> None:
     ax.set_ylabel("Score")
     ax.set_title("Validation metrics vs patch size")
     ax.set_xticks(sizes)
-    ax.legend(loc="best", fontsize=9)
+    ax.legend(loc="best", fontsize=12)
     ax.grid(True, linestyle="--", alpha=0.5)
     fig.tight_layout()
 
@@ -552,7 +554,7 @@ def generate_plots(datasets: dict[int, dict], output_dir: str) -> None:
 
     # ── 2. Individual metric figures ──────────────────────────────────────────
     for key in metric_keys:
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=figsize)
 
         ax.errorbar(
             sizes, means[key], yerr=stds[key],
@@ -565,7 +567,7 @@ def generate_plots(datasets: dict[int, dict], output_dir: str) -> None:
         ax.set_ylabel("Score")
         ax.set_title(f"{METRICS[key]} vs patch size")
         ax.set_xticks(sizes)
-        ax.legend(loc="best", fontsize=9)
+        ax.legend(loc="best", fontsize=12)
         ax.grid(True, linestyle="--", alpha=0.5)
         fig.tight_layout()
 
@@ -608,6 +610,15 @@ def main():
         help="Output directory for generated tables, figures and reports."
     )
 
+    parser.add_argument(
+        "--figsize",
+        nargs=2,
+        type=float,
+        default=(6.0, 4.0),
+        metavar=("WIDTH", "HEIGHT"),
+        help="Figure size in inches (default: 6.0 4.0)"
+    )
+
     args = parser.parse_args()
 
     INPUT_DIR = args.input_dir
@@ -626,11 +637,15 @@ def main():
 
     print("\nGenerating tables...")
 
+    filepath = os.path.join(OUTPUT_DIR, "all_metrics.json")
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(datasets, f, indent=4, ensure_ascii=False)
+
     generate_cv_results_table(datasets, OUTPUT_DIR)
     generate_shapiro_table(datasets, OUTPUT_DIR)
     generate_ttest_tables(datasets, OUTPUT_DIR)
     generate_train_args_tables(datasets, OUTPUT_DIR)
-    generate_plots(datasets, OUTPUT_DIR)
+    generate_plots(datasets, OUTPUT_DIR,figsize=tuple(args.figsize))
 
     print("\nDone.")
 
