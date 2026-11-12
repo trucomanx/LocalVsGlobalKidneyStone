@@ -297,16 +297,9 @@ def generate_shapiro_table(datasets: dict[int, dict],
 def generate_ttest_tables(datasets: dict[int, dict],
                            output_dir: str) -> None:
     """
-    One .tex file per metric. Matrix of p-values for the question:
-        "Does mean(X) > mean(Y)?"  (Welch's one-sided independent t-test)
-
-    Cell (X, Y) answers: is mean(X) > mean(Y)?
-
-    Which pairs are computed is controlled by the condition on (X, Y):
-        X < Y  → upper triangular
-        X != Y → full matrix (swap X < Y for X != Y to toggle)
-
-    Bold when p < ALPHA.
+    One .tex file per metric. Rows represent X and columns represent Y;
+    each cell reports the one-sided Welch t-test p-value for H1: mean(X) > mean(Y).
+    Bold indicates p-values below the configured ALPHA.
     """
     sizes       = list(datasets.keys())
     metric_keys = list(METRICS.keys())
@@ -340,37 +333,40 @@ def generate_ttest_tables(datasets: dict[int, dict],
             rows.append(" & ".join(cells) + r" \\")
 
         num_cols = n + 1
-        note = (rf"\multicolumn{{{num_cols}}}{{l}}"
-                rf"{{\small Cell $(X, Y)$: one-sided Welch's $t$-test, $H_1$: mean$(X) >$ mean$(Y)$. "
-                rf"Bold: $p < {ALPHA}$. Bonferroni-adjusted $\alpha$ = "
-                rf"{ALPHA / (n*(n-1)//2):.4f}.}}  \\")
+        note = (rf"%\multicolumn{{{num_cols}}}{{l}}"
+                rf"{{\small Rows identify $X$; columns identify $Y$. Each cell reports "
+                rf"the one-sided Welch's $t$-test $p$-value for $H_1: \mu_X > \mu_Y$. "
+                rf"Bold indicates $p < {ALPHA}$.}}  \\")
 
         filename = f"table_ttest_{key.replace('-','_')}.tex"
         intro = (
             rf"Table~\ref{{tab:ttest_{key.replace('-','_')}}} presents the $p$-values "
-            rf"of pairwise one-sided Welch's $t$-tests for \textit{{{metric_label}}}. "
-            r"Each cell $(X, Y)$ contains the $p$-value for the hypothesis that "
-            r"the mean of dataset $X$ is greater than the mean of dataset $Y$. "
-            rf"Values in bold indicate statistical significance at $\alpha = {ALPHA}$."
+            rf"from pairwise one-sided Welch's $t$-tests for \textit{{{metric_label}}} "
+            r"across dataset patch sizes. In each comparison, the row identifies "
+            r"dataset $X$ and the column identifies dataset $Y$; the test evaluates "
+            r"whether the mean score for $X$ is greater than the mean score for $Y$ "
+            r"($H_1: \mu_X > \mu_Y$). "
+            rf"Bold indicates $p < {ALPHA}$."
         )
 
         lines = [
-            intro+"\n\n",
-            r"\begin{table}[!htb]",
+            intro + "\n\n",
+            r"\begin{table*}[!htb]",
             r"\centering",
-            rf"\caption{{Pairwise $t$-test $p$-values for \textit{{{metric_label}}}. "
-            rf"Each cell $(X, Y)$ tests $H_1$: mean$(X) >$ mean$(Y)$.}}",
+            rf"\caption{{Pairwise one-sided Welch's $t$-test $p$-values for "
+            rf"\textit{{{metric_label}}} across dataset patch sizes."
+            rf"}}",
             rf"\label{{tab:ttest_{key.replace('-','_')}}}",
             rf"\begin{{tabular}}{{{col_spec}}}",
             r"\toprule",
             header,
             r"\midrule",
             *rows,
-            r"\midrule",
+            r"%\midrule",
             note,
             r"\bottomrule",
             r"\end{tabular}",
-            r"\end{table}",
+            r"\end{table*}",
         ]
 
         ttest_path = os.path.join(output_dir, "t_test")
@@ -476,26 +472,33 @@ def generate_train_args_tables(datasets: dict[int, dict],
 # PLOTS — metric scores vs patch size
 # ===========================================================================
 
-def generate_plots( datasets: dict[int, dict], 
-                    output_dir: str,
-                    figsize=(7, 4.5)) -> None:
+def select_metrics(datasets: dict[int, dict], metric_keys: list[str]) -> dict[int, dict]:
     """
-    Generates two sets of plots saved as PDF under <output_dir>/plots/:
-
-    1. plots/all_metrics.pdf
-       All metrics on a single figure, one line per metric.
-       X-axis: patch size (px). Y-axis: score.
-       Error bars: ± std across the 5 folds.
-
-    2. plots/metrics/<metric_key>.pdf
-       One figure per metric, showing mean ± std across patch sizes.
+    Return a datasets-shaped structure containing only the requested metrics.
+    The original dictionaries and their metric values are not modified.
     """
+    return {
+        size: {
+            **data,
+            "metrics": {key: data["metrics"][key] for key in metric_keys},
+        }
+        for size, data in datasets.items()
+    }
+
+
+def generate_plot(datasets: dict[int, dict], output_dir: str,
+                  stem: str, figsize=(7, 4.5)) -> None:
+    """Plot every metric present in datasets on one figure and write PDF + TeX."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     sizes       = list(datasets.keys())
-    metric_keys = list(METRICS.keys())
+    if not sizes:
+        raise ValueError("Cannot generate a plot without datasets and metrics.")
+    metric_keys = list(datasets[sizes[0]]["metrics"].keys())
+    if not metric_keys:
+        raise ValueError("Cannot generate a plot without datasets and metrics.")
 
     # Pre-compute means and stds for every metric and size
     # means[key] = list of mean values, one per size (same order as sizes)
@@ -509,9 +512,7 @@ def generate_plots( datasets: dict[int, dict],
             means[key].append(float(np.mean(vals)))
             stds[key].append(float(np.std(vals, ddof=1)))
 
-    plots_dir   = os.path.join(output_dir, "plots")
-    metrics_dir = os.path.join(plots_dir,  "metrics")
-    os.makedirs(metrics_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # ── Shared style ──────────────────────────────────────────────────────────
     STYLE = {
@@ -521,7 +522,7 @@ def generate_plots( datasets: dict[int, dict],
         "markersize": 5,
     }
 
-    # ── 1. All metrics on a single figure ─────────────────────────────────────
+    # ── All selected metrics on a single figure ───────────────────────────────
     fig, ax = plt.subplots(figsize=figsize)
 
     for key in metric_keys:
@@ -533,57 +534,40 @@ def generate_plots( datasets: dict[int, dict],
 
     ax.set_xlabel("Patch size (px)")
     ax.set_ylabel("Score")
-    ax.set_title("Validation metrics vs patch size")
+    title = "Validation metrics" if len(metric_keys) > 1 else METRICS[metric_keys[0]]
+    ax.set_title(f"{title} vs patch size")
     ax.set_xticks(sizes)
     ax.legend(loc="best", fontsize=12)
     ax.grid(True, linestyle="--", alpha=0.5)
     fig.tight_layout()
 
-    out_path = os.path.join(plots_dir, "all_metrics.pdf")
+    out_path = os.path.join(output_dir, f"{stem}.pdf")
     fig.savefig(out_path, format="pdf")
     plt.close(fig)
     print(f"  Wrote: {out_path}")
 
     _write_figure_tex(
-        directory = plots_dir,
-        stem      = "all_metrics",
-        caption   = r"Validation metrics vs patch size. Each curve represents one metric; "
-                    r"error bars indicate $\pm$ one standard deviation across the 5 folds.",
-        label     = "fig:all_metrics",
+        directory = output_dir,
+        stem      = stem,
+        caption   = ", ".join(METRICS[key] for key in metric_keys)
+                    + " vs patch size. Error bars indicate "
+                    + r"$\pm$ one standard deviation across the 5 folds.",
+        label     = f"fig:{stem}",
     )
 
-    # ── 2. Individual metric figures ──────────────────────────────────────────
-    for key in metric_keys:
-        fig, ax = plt.subplots(figsize=figsize)
 
-        ax.errorbar(
-            sizes, means[key], yerr=stds[key],
-            color="steelblue",
-            label=METRICS[key],
-            **STYLE,
-        )
+def generate_plots(datasets: dict[int, dict], output_dir: str,
+                   figsize=(7, 4.5), extra_plot_groups=None) -> None:
+    """Generate the default all-metrics plot and any requested metric groups."""
+    plots_dir = os.path.join(output_dir, "plots")
+    os.makedirs(plots_dir, exist_ok=True)
+    generate_plot(datasets, plots_dir, "all_metrics", figsize)
 
-        ax.set_xlabel("Patch size (px)")
-        ax.set_ylabel("Score")
-        ax.set_title(f"{METRICS[key]} vs patch size")
-        ax.set_xticks(sizes)
-        ax.legend(loc="best", fontsize=12)
-        ax.grid(True, linestyle="--", alpha=0.5)
-        fig.tight_layout()
-
-        fname    = f"{key.replace('-', '_')}.pdf"
-        out_path = os.path.join(metrics_dir, fname)
-        fig.savefig(out_path, format="pdf")
-        plt.close(fig)
-        print(f"  Wrote: {out_path}")
-
-        _write_figure_tex(
-            directory = metrics_dir,
-            stem      = key.replace("-", "_"),
-            caption   = f"{METRICS[key]} vs patch size. "
-                        r"Error bars indicate $\pm$ one standard deviation across the 5 folds.",
-            label     = f"fig:{key.replace('-', '_')}",
-        )
+    extra_dir = os.path.join(plots_dir, "extra")
+    for metric_keys in extra_plot_groups or []:
+        datasets_one = select_metrics(datasets, metric_keys)
+        stem = "_and_".join(key.replace("-", "_") for key in metric_keys)
+        generate_plot(datasets_one, extra_dir, stem, figsize)
 
 # ===========================================================================
 # MAIN
@@ -619,6 +603,17 @@ def main():
         help="Figure size in inches (default: 6.0 4.0)"
     )
 
+    parser.add_argument(
+        "--extra-plot",
+        dest="extra_plot_groups",
+        action="append",
+        nargs="+",
+        choices=list(METRICS.keys()),
+        metavar="METRIC",
+        help=("Add a plot containing the listed metrics. Repeat the option for "
+              "additional plots, e.g. --extra-plot accuracy true-negative-rate."),
+    )
+
     args = parser.parse_args()
 
     INPUT_DIR = args.input_dir
@@ -645,7 +640,12 @@ def main():
     generate_shapiro_table(datasets, OUTPUT_DIR)
     generate_ttest_tables(datasets, OUTPUT_DIR)
     generate_train_args_tables(datasets, OUTPUT_DIR)
-    generate_plots(datasets, OUTPUT_DIR,figsize=tuple(args.figsize))
+    generate_plots(
+        datasets,
+        OUTPUT_DIR,
+        figsize=tuple(args.figsize),
+        extra_plot_groups=args.extra_plot_groups,
+    )
 
     print("\nDone.")
 

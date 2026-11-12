@@ -16,5 +16,7 @@
     python3 report.py \
         -i "/run/media/fernando/TOSHIBA-2TB/WORKS/KIDNEY/RESULTS/ResNet50" \
         -o "./report" \
-        --figsize 6 4
+        --figsize 6 4 \
+        --extra-plot accuracy true-negative-rate \
+        --extra-plot precision recall f1-score
     ```
