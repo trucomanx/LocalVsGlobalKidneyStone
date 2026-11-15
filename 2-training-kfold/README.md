@@ -1,7 +1,7 @@
 # Crossvalidation
 
 
-## Using script
+## Option 1) Using script
 
 You need first to generate the source dataset dir in (../1-dataset-processing)[../1-dataset-processing].
 
@@ -20,3 +20,7 @@ You need first to generate the source dataset dir in (../1-dataset-processing)[.
 ./crossval-size.sh "output" "ResNet50" 86
 ./crossval-size.sh "output" "ResNet50" 94
 ```
+
+## Option 2) Using google Colab
+
+Upload the (crossval-size.ipynb)[crossval-size.ipynb] Jupyter file to Google Colab.
