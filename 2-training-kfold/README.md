@@ -15,7 +15,7 @@ pip install -r requirements.txt
 You need first to generate the source dataset dir in [../1-dataset-processing](../1-dataset-processing).
 
 ```bash
-./crossval-size.sh <OUTPUT_DIR> <BACKBONE_NAME> <PATCH_SIZE>
+./crossval-size.sh <OUTPUT_DIR> <BACKBONE_NAME> <PATCH_SIZE> <BATCH_SIZE>
 ```
 
 BACKBONE_NAME can be "EfficientNetV2S", "MobileNetV3Large", "ResNet50", ...
