@@ -23,33 +23,18 @@ Download the dataset from Kaggle, first generate the file `~/.kaggle/kaggle.json
 ./download-source.sh "dataset-source/stone" 
 ```
 
-### 2 - Generate dataset <PATCH_SIZE>
-Run the prog_generate script with a patch size:
-
-```bash
-python prog_generate.py -ds <PATH_TO_SOURCE> -do <PATH_TO_OUTPUT> -ps <PATCH_SIZE>
-```
-
-Example:
-
-```bash
-python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 48
-python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 56
-python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 64
-python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 72
-python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 80
-python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 88
-python ./src/prog_generate.py -ds "dataset-source" -do "dataset-article" -ps 96
-```
-The description of the output dataset can be seen in [README.patch_size.md](README.patch_size.md)
+The generation of a specific dataset with a patch size can be seen in [README.generate.md](README.generate.md). However, you don't need to take this step here.
+The description of the output dataset can be seen in [README.patch_size.md](README.patch_size.md).
 
 ## 📊 Generate statistics
 
+If you wish to generate all dataset statistics from the source, use the next code:
 
 ```bash
 ./genera-stats.sh "dataset-source" "dataset-stats"
-python3 ./src/prog_stat_report.py \
+python3./src/prog_stat_report.py \
     --input_dir "dataset-stats/jsons" \
     --output_dir "dataset-stats"
 ```
 
+**You will need a lot of disk space**

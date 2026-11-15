@@ -5,6 +5,8 @@ import pandas as pd
 import tensorflow as tf
 import gc
 import random
+import argparse
+
 from tensorflow.keras import layers, models
 from tensorflow.keras.applications import (
     EfficientNetV2S,
@@ -736,13 +738,186 @@ def train_subdataset(   patch_dataset_path,
 
     print("\nTreinamento finalizado.")
 
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Treinamento de classificação de imagens usando K-Fold."
+    )
+
+    # ------------------------------------------------
+    # Paths
+    # ------------------------------------------------
+    parser.add_argument(
+        "--patch-dataset-path",
+        type=str,
+        required=True,
+        help="Diretório do dataset."
+    )
+
+    parser.add_argument(
+        "--output-result-path",
+        type=str,
+        required=True,
+        help="Diretório para salvar os resultados."
+    )
+
+    # ------------------------------------------------
+    # Model
+    # ------------------------------------------------
+    parser.add_argument(
+        "--model-type",
+        type=str,
+        choices=[
+            "EfficientNetV2S",
+            "MobileNetV3Large",
+            "ResNet50",
+            "DenseNet121",
+            "ConvNeXtTiny"
+        ],
+        default="ResNet50",
+        help="Arquitetura utilizada."
+    )
+
+    # ------------------------------------------------
+    # Class weights
+    # ------------------------------------------------
+    parser.add_argument(
+        "--class-json-path",
+        type=str,
+        default=None,
+        help="Arquivo JSON contendo a quantidade de amostras por classe."
+    )
+
+    parser.add_argument(
+        "--class-weight",
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=("CLASS_0", "CLASS_1"),
+        help="Pesos das classes 0 e 1, respectivamente."
+    )
+
+    # ------------------------------------------------
+    # Training parameters
+    # ------------------------------------------------
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=64
+    )
+
+    parser.add_argument(
+        "--epochs-stage-1",
+        type=int,
+        default=32
+    )
+
+    parser.add_argument(
+        "--epochs-stage-2",
+        type=int,
+        default=32
+    )
+
+    parser.add_argument(
+        "--learning-rate-stage-1",
+        type=float,
+        default=1e-3
+    )
+
+    parser.add_argument(
+        "--learning-rate-stage-2",
+        type=float,
+        default=1e-4
+    )
+
+    parser.add_argument(
+        "--early-stop-patience",
+        type=int,
+        default=16
+    )
+
+    parser.add_argument(
+        "--num-folds",
+        type=int,
+        default=5
+    )
+
+    parser.add_argument(
+        "--my-seed",
+        type=int,
+        default=42
+    )
+
+    return parser.parse_args()
+
+
+# ============================================================
+# MAIN
+# ============================================================
+if __name__ == "__main__":
+
+    args = parse_args()
+
+    # --------------------------------------------------------
+    # CLASS WEIGHTS
+    # --------------------------------------------------------
+
+    if args.class_weight is not None:
+
+        if any(w <= 0 for w in args.class_weight):
+            raise ValueError("Os pesos das classes devem ser positivos.")
+
+        class_weight = {
+            0: args.class_weight[0],
+            1: args.class_weight[1]
+        }
+
+    elif args.class_json_path is not None:
+
+        with open(args.class_json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        class_weight = compute_class_weight_from_dict(data)
+
+    else:
+
+        class_weight = {
+            0: 1.0,
+            1: 1.0
+        }
+
+    print("Class weights:", class_weight)
+
+    # --------------------------------------------------------
+    # TRAINING
+    # --------------------------------------------------------
+
+    train_subdataset(
+        patch_dataset_path=args.patch_dataset_path,
+        output_result_path=args.output_result_path,
+        model_type=args.model_type,
+        batch_size=args.batch_size,
+        class_weight=class_weight,
+        epochs_stage_1=args.epochs_stage_1,
+        epochs_stage_2=args.epochs_stage_2,
+        learning_rate_stage_1=args.learning_rate_stage_1,
+        learning_rate_stage_2=args.learning_rate_stage_2,
+        early_stop_patience=args.early_stop_patience,
+        num_folds=args.num_folds,
+        my_seed=args.my_seed
+    )
+
+
+"""
 # ============================
 # EXEMPLO DE USO
 # ============================
+
 if __name__ == "__main__":
     patch_dataset_path = "../1-dataset-processing/data/dataset-article/dataset-64/"
     output_result_path = "outputs/dataset-64"
     model_type = "EfficientNetV2S"
     
     train_subdataset(patch_dataset_path, output_result_path, model_type)
-
+"""
