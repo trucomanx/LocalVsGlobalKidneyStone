@@ -3,7 +3,7 @@
 
 ## Option 1) Using script
 
-You need first to generate the source dataset dir in (../1-dataset-processing)[../1-dataset-processing].
+You need first to generate the source dataset dir in [../1-dataset-processing](../1-dataset-processing).
 
 ```bash
 ./crossval-size.sh <OUTPUT_DIR> <BACKBONE_NAME> <PATCH_SIZE>
@@ -23,4 +23,4 @@ You need first to generate the source dataset dir in (../1-dataset-processing)[.
 
 ## Option 2) Using google Colab
 
-Upload the (crossval-size.ipynb)[crossval-size.ipynb] Jupyter file to Google Colab.
+Upload the [crossval-size.ipynb](crossval-size.ipynb) Jupyter file to Google Colab.
