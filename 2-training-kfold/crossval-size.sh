@@ -3,6 +3,7 @@
 OUTPUT_DIR=${1-output}
 BACKBONE_NAME=${2:-ResNet50}
 PATCH_SIZE=${3:-64}
+BATCH_SIZE=$(4:-64)
 
 ################################################################################
 
@@ -21,7 +22,7 @@ python prog_train.py \
     --patch-dataset-path "$DATASET_PATCH_DIR" \
     --output-result-path "$OUTPUT_DIR/$BACKBONE_NAME/dataset-$PATCH_SIZE" \
     --model-type "$BACKBONE_NAME" \
-    --batch-size 64 \
+    --batch-size $BATCH_SIZE \
     --epochs-stage-1 32 \
     --epochs-stage-2 32 \
     --learning-rate-stage-1 0.001 \
@@ -31,4 +32,4 @@ python prog_train.py \
     --my-seed 42 \
     --class-json-path "$DATASET_PATCH_DIR/report.json"
 
-
+rm -r -f $PATCH_ROOT_DIR
