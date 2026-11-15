@@ -9,6 +9,8 @@ You need first to generate the source dataset dir in [../1-dataset-processing](.
 ./crossval-size.sh <OUTPUT_DIR> <BACKBONE_NAME> <PATCH_SIZE>
 ```
 
+BACKBONE_NAME can be "EfficientNetV2S", "MobileNetV3Large", "ResNet50", ...
+
 **Example:**
 
 ```bash
